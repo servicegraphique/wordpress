@@ -1,24 +1,27 @@
-# Formulaire de lead — fonctionnement 100 % JavaScript
+# Formulaire de lead — trois e-mails depuis une adresse dédiée
 
 Le formulaire des pages `/lead-assurances/`, `/lead-assurances-rcs/`,
 `/lead-energies/` et `/lead-energies-rcs/` fonctionne **sans serveur, sans PHP
 et sans back-end**. Toute la logique est dans le JavaScript de la page.
 
+Les **trois messages** exigés — notification au responsable, copie au chef de
+département, confirmation au client — partent de la **même boîte dédiée** :
+`ifeminformatique@gmail.com`, reliée au service **EmailJS**.
+
 ```
 Visiteur ──► formulaire (2 étapes, validation, accessibilité)
                  │
                  ▼
-      window.HL_LEAD_CONFIG.provider
+      window.HL_LEAD_CONFIG.provider  =  'emailjs'
                  │
-      ┌──────────┼─────────────┬──────────────┐
-      │          │             │              │
-   'local'  'formsubmit'  'web3forms'    'endpoint'
-  (défaut)  relais e-mail relais e-mail  POST JSON
-  stockage   sans serveur  sans serveur  (facultatif)
-  navigateur
-      │
-      ▼
-/boite-de-reception.html  →  les 2 e-mails générés, consultables
+                 ├──► 1. Responsable   manajahelvin@gmail.com   (Répondre à = le prospect)
+                 ├──► 2. Chef          ifeminformatique@gmail.com  (objet « [Copie] … »)
+                 │     └──► 3. Client  le prospect              (Répondre à = ifeminformatique@gmail.com)
+                 │
+                 └─ si EmailJS refuse (quota, clés) ──► repli `formsubmit`, la demande n'est pas perdue
+                        │
+                        ▼
+/boite-de-reception.html  →  copie locale des demandes et des e-mails générés
 ```
 
 ---
@@ -30,91 +33,198 @@ cd /chemin/vers/le/site
 python3 -m http.server 8000
 ```
 
-Puis ouvrir :
-
 | Page | Rôle |
 |---|---|
 | <http://localhost:8000/lead-assurances/> | formulaire assurances |
 | <http://localhost:8000/lead-energies/> | formulaire énergies |
 | <http://localhost:8000/boite-de-reception.html> | demandes reçues + e-mails générés |
 
-Le mode livré est **`formsubmit`** : une demande valide part réellement par
-e-mail vers `manajahelvin@gmail.com`, avec `ifeminformatique@gmail.com` en
-copie, sans aucun serveur.
-
-1. la première soumission déclenche un e-mail d'activation de FormSubmit
-   dans la boîte du responsable : **cliquer une fois sur le lien** ;
-2. à chaque envoi, la demande part immédiatement (objet
-   `[Lead <formulaire>] <société> — <volume> leads/mois`) ;
-3. une **copie locale** est conservée : elle apparaît dans
-   `/boite-de-reception.html` avec les deux messages générés, exportables en
-   JSON/CSV — utile si un e-mail se perd ;
-4. la confirmation destinée au prospect y est prête : le bouton
-   « Envoyer la confirmation au client » l'ouvre dans la messagerie du poste.
+À la livraison, `provider: 'emailjs'` est déjà en place mais les **clés sont
+vides** : tant qu'elles ne sont pas renseignées (§ 3), chaque demande part
+automatiquement par le repli **FormSubmit** vers le responsable, avec le chef en
+copie. **Aucune demande n'est perdue** pendant la mise en service.
 
 Pour une démonstration sans aucun envoi, passer `provider: 'local'` : rien ne
 part sur le réseau, tout reste dans le navigateur.
 
 ---
 
-## 2. Les deux e-mails générés
+## 2. Les trois e-mails générés
 
-| | Destinataires | Contenu |
-|---|---|---|
-| Notification | `manajahelvin@gmail.com` (À) · `ifeminformatique@gmail.com` (Copie) · `Répondre à` = le prospect | coordonnées, volume, besoins, formulaire, page d'origine, UTM, date, référence, encart « Action attendue » |
-| Confirmation | le prospect (À) · `Répondre à` = `manajahelvin@gmail.com` | « une équipe s'en charge », récapitulatif (sans métadonnées internes), lien politique de confidentialité |
+| # | Message | Destinataire | Répondre à | Contenu |
+|---|---|---|---|---|
+| 1 | Notification | `manajahelvin@gmail.com` | le prospect | coordonnées, volume, besoins, formulaire, page d'origine, UTM, date, référence, encart « Action attendue » |
+| 2 | Copie au chef | `ifeminformatique@gmail.com` | le prospect | même message que la notification, objet préfixé `[Copie]` |
+| 3 | Confirmation | le prospect | `ifeminformatique@gmail.com` | « une équipe s'en charge », récapitulatif (sans métadonnées internes), lien politique de confidentialité |
 
-Ils sont produits par `buildEmails()` dans le script du formulaire, à partir
-des mêmes gabarits que la production (HTML + version texte).
+Les trois partent **de** `ifeminformatique@gmail.com` : le prospect qui répond à
+sa confirmation écrit donc au chef de département, pas à une adresse technique.
+
+Les gabarits HTML + texte sont produits par `buildEmails()` dans le script du
+formulaire ; la boîte de réception locale en affiche le rendu exact.
+
+> Le chef reçoit **un second message distinct** (et non une simple copie) : c'est
+> ce qui garantit qu'il reçoit l'e-mail même si le responsable filtre ou
+> redirige le sien. Mettre `emailjs.ccChef: true` ajoute en plus une copie sur
+> le message du responsable — inutile dans le cas nominal, donc `false`.
 
 ---
 
-## 3. Changer de mode d'envoi
+## 3. Mise en service d'EmailJS (une seule fois, ~10 minutes)
+
+EmailJS envoie de vrais e-mails depuis une boîte existante, appelé en
+JavaScript : aucun serveur, aucune clé SMTP dans la page.
+
+### 3.1 Créer le compte et relier la boîte dédiée
+
+1. Créer un compte gratuit sur <https://dashboard.emailjs.com> (utiliser la
+   boîte `ifeminformatique@gmail.com`, c'est elle qui expédiera).
+2. **Email Services → Add New Service → Gmail**.
+3. Autoriser la connexion au compte `ifeminformatique@gmail.com` (OAuth
+   Google). Relever l'**identifiant du service**, de la forme `service_xxxxxxx`.
+
+> Le service doit être ce compte Gmail précis : c'est lui qui devient
+> l'expéditeur des trois messages. Un autre service (Gmail personnel, SMTP
+> générique) expédierait depuis une autre adresse.
+
+Les messages sortent par l'infrastructure Google : SPF et DKIM sont donc déjà
+corrects, sans configuration DNS supplémentaire.
+
+### 3.2 Créer un gabarit unique
+
+**Email Templates → New Template**, puis dans l'onglet *Settings* :
+
+| Champ EmailJS | Valeur |
+|---|---|
+| To Email | `{{to_email}}` |
+| CC | `{{cc}}` |
+| BCC | `{{bcc}}` — facultatif, peut rester vide |
+| Subject | `{{subject}}` |
+| Reply To | `{{reply_to}}` |
+| From Name | `{{from_name}}` |
+
+Dans l'onglet *Content*, coller **exactement** ceci (triple accolade : le corps
+est du HTML déjà mis en forme par le formulaire) :
+
+```html
+{{{message}}}
+```
+
+L'onglet *Plain text* n'est pas nécessaire : `message_text` est transmis en
+parallèle pour les clients qui refusent le HTML (variable `{{message_text}}`
+disponible si vous préférez l'utiliser).
+
+Relever l'**identifiant du gabarit**, de la forme `template_xxxxxxx`.
+
+> Un seul gabarit suffit pour les trois messages : le destinataire, l'objet et
+> le corps sont des variables. C'est aussi ce qui tient dans l'offre gratuite
+> (2 gabarits maximum).
+
+### 3.3 Renseigner les trois clés dans les 4 pages
+
+Dans le `<script>` en tête de chaque page, l'objet `emailjs` :
+
+```js
+emailjs: {
+  publicKey: 'AbCdEfGhIjKlMnOp',   // Account → General → Public Key
+  serviceId: 'service_xxxxxxx',    // Email Services
+  templateId: 'template_xxxxxxx',  // Email Templates
+  ccChef: false
+},
+```
+
+La **clé publique** n'est pas un secret : elle est visible dans le code de la
+page, c'est son principe. Ce qui protège la boîte, c'est le quota et la
+possibilité de restreindre les origines autorisées côté tableau de bord.
+
+Renseigner **les 4 pages** (`lead-assurances`, `lead-assurances-rcs`,
+`lead-energies`, `lead-energies-rcs`) — même service, même gabarit.
+
+### 3.4 Quota et surveillance
+
+| Offre | Envois | Gabarits | Remarque |
+|---|---|---|---|
+| Gratuite | **200 / mois** | 2 | ~**66 demandes** (3 messages chacune) |
+| Payante (~9 $/mois) | au-delà | illimités | whitelist d'origines, white-label |
+
+- Dépassement = requêtes **rejetées** (jamais de surcoût silencieux).
+- EmailJS prévient par e-mail à 80 %, 95 % et 100 % du quota.
+- **Quota épuisé ou clés invalides** : le formulaire bascule automatiquement
+  sur le repli `formsubmit` — la demande arrive quand même au responsable, sans
+  la confirmation au client. Le journal local indique alors le fournisseur
+  réellement utilisé (`formsubmit`).
+- Le suivi mensuel se lit dans *Account → Usage*.
+
+### 3.5 Vérifier en une demande
+
+1. Envoyer une demande test depuis `/lead-assurances/`.
+2. Trois e-mails doivent arriver : responsable, chef (`[Copie] …`), et le
+   prospect utilisé dans le test.
+3. Dans Gmail, l'expéditeur affiché est `ifeminformatique@gmail.com` ; un
+   « Répondre » sur la confirmation écrit à cette même adresse.
+4. `/boite-de-reception.html` affiche la demande avec la mention
+   « Envoi automatique actif » et **plus de bouton** « Envoyer la confirmation
+   au client » (le message est déjà parti).
+
+---
+
+## 4. Changer de mode d'envoi
 
 Tout se règle dans **un seul objet**, en haut du `<script>` de chaque page :
 
 ```js
 window.HL_LEAD_CONFIG = {
-  provider: 'formsubmit',
-  contactEmail: 'manajahelvin@gmail.com',
+  provider: 'emailjs',
+  senderName: 'HelloLead',
+  contactEmail: 'ifeminformatique@gmail.com',   // affiché au prospect / Reply-To
   siteUrl: 'https://www.hellodevis.fr',
   inboxUrl: '/boite-de-reception.html',
   endpoint: '',
+  emailjs: { publicKey: '', serviceId: '', templateId: '', ccChef: false },
+  fallbackProvider: 'formsubmit',
   formsubmit: { alias: '', email: 'manajahelvin@gmail.com' },
   web3forms: { accessKey: '' },
   form: {
     key: 'lead-assurances',
     label: 'Assurances pro',
-    responsable: ['manajahelvin@gmail.com'],   // À
-    chef: ['ifeminformatique@gmail.com']       // Copie
+    responsable: ['manajahelvin@gmail.com'],   // message 1
+    chef: ['ifeminformatique@gmail.com']       // message 2
   }
 };
 ```
 
-### `formsubmit` — actif (vrai e-mail, sans serveur)
+### `emailjs` — mode livré (trois e-mails, expéditeur unique)
 
-La demande part vers le `responsable`, le `chef` est en copie, et
-`_replyto` porte l'adresse du prospect : répondre à l'e-mail écrit
-directement au client. Première soumission = e-mail d'activation à confirmer.
+Voir § 3. `fallbackProvider` désigne le mode utilisé si les clés sont vides ou
+refusées, ou si le quota mensuel est atteint : la demande n'est jamais perdue.
+
+### `formsubmit` — repli (vrai e-mail, sans serveur)
+
+La demande part vers le `responsable`, le `chef` en copie, et `_replyto` porte
+l'adresse du prospect. **Première soumission = e-mail d'activation à
+confirmer** dans la boîte du responsable, sinon rien n'arrive.
+
+Limite structurelle : l'API AJAX de FormSubmit n'envoie **pas** de confirmation
+au prospect. C'est pourquoi ce mode est un repli, pas le mode principal.
 
 Astuce : après activation, FormSubmit fournit un **alias** (chaîne aléatoire).
 Le renseigner dans `formsubmit.alias` évite d'afficher l'adresse en clair dans
-le code source de la page.
+le code source.
 
 ### `local` — pour les démonstrations
 
-Rien ne part. Les demandes restent dans le navigateur et sont consultables
-dans `/boite-de-reception.html`.
+Rien ne part. Les demandes restent dans le navigateur et sont consultables dans
+`/boite-de-reception.html`.
 
-### `web3forms` — vrai e-mail sans serveur (clé API)
+### `web3forms` — autre relais sans serveur (clé API)
 
 ```js
 provider: 'web3forms',
 web3forms: { accessKey: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' }
 ```
 
-Clé gratuite sur <https://web3forms.com>. Prévoir un transfert de la boîte
-web3forms vers la boîte métier pour les copies.
+Clé gratuite sur <https://web3forms.com>. Un seul destinataire par envoi :
+prévoir un transfert vers la boîte métier pour les copies.
 
 ### `endpoint` — votre propre récepteur
 
@@ -123,17 +233,20 @@ provider: 'endpoint',
 endpoint: 'https://mon-api.exemple.fr/lead'
 ```
 
-POST JSON (même contrat que le relais PHP livré en option, § 6). Utile pour
-un CRM, une fonction serverless (Cloudflare Workers, Netlify, Vercel) ou un
-webhook interne.
+POST JSON (même contrat que le relais PHP livré en option, § 8). Utile pour un
+CRM, une fonction serverless (Cloudflare Workers, Netlify, Vercel) ou un webhook
+interne. C'est ce mode qu'un relais maîtrisé utiliserait pour expédier depuis
+`ifeminformatique@gmail.com` via SMTP Google.
 
-> **Le mode `local` reste le seul qui ne dépend d'aucun service tiers.**
-> Les trois autres ajoutent une dépendance externe : à choisir en connaissance
-> de cause, et à documenter dans la politique de confidentialité.
+> **Seul `local` ne dépend d'aucun service tiers.** Les trois autres ajoutent une
+> dépendance externe : à choisir en connaissance de cause, et à documenter dans
+> la politique de confidentialité.
 
 ---
 
-## 4. Anti-spam (côté navigateur)
+## 5. Anti-spam, RGPD et limites
+
+### Anti-spam (côté navigateur)
 
 | Mécanisme | Effet |
 |---|---|
@@ -142,51 +255,56 @@ webhook interne.
 | Honeypot invisible | `aria-hidden`, `tabindex="-1"`, hors écran |
 | Nettoyage | `.trim()`, minuscules sur l'e-mail, chiffres forcés sur le code postal et le téléphone |
 
-Un formulaire sans serveur ne peut pas limiter le débit par IP : le relais
-applique ses propres filtres, le piège reste la première barrière.
+Un formulaire sans serveur ne peut pas limiter le débit par IP : EmailJS applique
+son propre quota, le piège reste la première barrière.
 
 ### Point RGPD
 
-Avec `formsubmit`, les données du prospect transitent par un service tiers
-(FormSubmit) avant d'arriver dans la boîte du responsable : à mentionner dans
-la politique de confidentialité au titre des sous-traitants. Le mode
-`endpoint` avec un relais maîtrisé (PHP ou serverless) évite ce tiers.
+Avec `emailjs`, les données du prospect transitent par EmailJS puis par Google
+(Gmail) avant d'arriver dans la boîte du responsable : deux sous-traitants à
+mentionner dans la politique de confidentialité, avec la finalité (réponse à une
+demande commerciale) et la durée de conservation. La copie locale (§ 7) reste
+dans le navigateur du poste et n'est jamais transmise.
 
-### Limite assumée du mode sans serveur
+Pour supprimer tout tiers : `provider: 'endpoint'` avec un relais maîtrisé
+(PHP ou serverless), qui expédie lui-même les messages.
 
-La **confirmation automatique au client** exige un envoi serveur : un
-navigateur ne peut pas écrire au prospect depuis le domaine HelloLead. En
-mode `formsubmit`, l'écran de succès reste donc honnête (« Votre demande a
-bien été transmise à notre équipe. ») et la confirmation est préparée en un
-clic depuis la boîte de réception locale.
+### Limite assumée
 
-Pour l'automatiser réellement : `production-php/` (PHP) ou un relais
-serverless (Cloudflare Worker, Netlify/Vercel Function) qui reçoit le POST et
-appelle un fournisseur d'e-mail transactionnel.
+- Le formulaire ne peut pas savoir si un message a été **lu**, seulement s'il a
+  été **accepté** par le fournisseur (HTTP 200).
+- Un envoi incertain (panne réseau, erreur 5xx) n'est **jamais rejoué** sur le
+  repli : mieux vaut une demande à ressaisir qu'un doublon commercial.
+- Un refus explicite (quota, clés) déclenche, lui, le repli sans risque.
 
 ---
 
-## 5. Accessibilité et états
+## 6. Accessibilité et états
 
 - Select personnalisé complet (clavier : flèches, `Entrée`, `Échap`, `Home`/`End`).
 - Erreurs reliées aux champs (`aria-invalid`, `aria-describedby`), focus déplacé
   vers le premier champ invalide.
 - Bouton en état `aria-busy` + libellé « Envoi en cours… » pendant l'envoi.
 - Écran de succès focalisé (`role="status"`), libellé d'étape « Demande envoyée ».
-- Messages d'échec explicites : validation, indisponibilité, panne réseau, avec
-  repli `mailto:` sur l'adresse de contact.
-- `dataLayer.push('hl_lead_form_submit' | 'hl_lead_form_error')` pour GTM.
+- Le succès ne promet la confirmation que si elle est réellement partie :
+  « Une confirmation vient d'être envoyée à … » n'apparaît que dans ce cas.
+- Messages d'échec explicites : validation, indisponibilité, quota, panne réseau,
+  avec repli `mailto:` sur l'adresse de contact.
+- `dataLayer.push('hl_lead_form_submit' | 'hl_lead_form_error')` pour GTM, avec
+  `provider`, `fallback`, `partial` dans le premier.
 
 ---
 
-## 6. Boîte de réception locale (`boite-de-reception.html`)
+## 7. Boîte de réception locale (`boite-de-reception.html`)
 
 | Fonction | Détail |
 |---|---|
 | Liste | demande la plus récente en tête, compteurs (total, mois, dernière réception) |
 | Détail | coordonnées, volume, besoins, formulaires, page d'origine, référence |
-| E-mails | les 2 messages rendus dans des `iframe` (hauteur ajustée au contenu) |
+| E-mails | les 2 gabarits rendus dans des `iframe` (hauteur ajustée au contenu) |
 | Actions | supprimer une demande, tout effacer, exporter en JSON, exporter en CSV |
+| Confirmation | bouton « Envoyer la confirmation au client » **seulement** si le message n'est pas déjà parti |
+| Mention | adaptative : mode EmailJS, relais, serveur ou journal local |
 | Synchronisation | la page se met à jour si une demande arrive depuis un autre onglet |
 
 Les données ne quittent jamais le navigateur. `noindex, nofollow` est appliqué,
@@ -194,46 +312,54 @@ mais **cette page ne doit pas être publiée** sur le site en production.
 
 ---
 
-## 7. Fichiers
+## 8. Fichiers
 
 | Fichier | Rôle | Publier ? |
 |---|---|---|
-| `lead-*/index.html` | formulaire + moteur JS, `provider: 'formsubmit'` (config en tête de script) | oui |
+| `lead-*/index.html` | formulaire + moteur JS, `provider: 'emailjs'` (config en tête de script) | oui |
 | `boite-de-reception.html` | boîte de réception locale des demandes | **non** |
-| `production-php/` | relais e-mail facultatif pour un serveur PHP (§ 8) | seulement si utilisé |
+| `production-php/` | relais e-mail facultatif pour un serveur PHP (§ 9) | seulement si utilisé |
 | `FORMULAIRE-LEAD.md` | ce document | non |
 
 Le dossier `production-php/` est **optionnel** : rien dans les pages n'en dépend
-aujourd'hui (`provider: 'formsubmit'`). Il est conservé pour le jour où un envoi
-transactionnel côté serveur sera nécessaire.
+aujourd'hui.
 
 ---
 
-## 8. Option : relais PHP (si un jour un vrai envoi serveur est requis)
+## 9. Option : relais PHP (si un jour un envoi serveur est requis)
 
 `production-php/lead-form-mail.php` + `lead-form-config.php` envoient réellement
-les deux e-mails (fonction `mail()`, SMTP, `wp_mail()` ou `log`), avec
+les deux e-mails internes (fonction `mail()`, SMTP, `wp_mail()` ou `log`), avec
 journalisation JSONL, purge RGPD (`--purge=180`) et diagnostic (`--doctor`).
+L'expéditeur y est déjà `ifeminformatique@gmail.com` ; pour passer par Gmail en
+SMTP, utiliser `smtp.gmail.com:587` et un **mot de passe d'application** Google
+(compte → Sécurité → Validation en deux étapes).
 
 Activation :
 
 1. copier les deux fichiers à la racine du site (PHP 7.4+) ;
-2. renseigner les adresses dans `lead-form-config.php`, puis `enabled => true` ;
+2. vérifier les adresses dans `lead-form-config.php`, puis `enabled => true` ;
 3. dans la page, passer `provider: 'endpoint'` et
    `endpoint: '/lead-form-mail.php'`.
 
-Sans serveur PHP, **ne pas l'utiliser** : c'est précisément ce que le mode
-`local` remplace.
+Sans serveur PHP, **ne pas l'utiliser** : c'est précisément ce qu'EmailJS
+remplace.
 
 ---
 
-## 9. Mise en production — liste de contrôle
+## 10. Mise en production — liste de contrôle
 
-- [x] `provider: 'formsubmit'` actif dans les 4 pages.
-- [x] `responsable` = manajahelvin@gmail.com, `chef` = ifeminformatique@gmail.com.
-- [ ] Formulaire **activé une fois** via le lien reçu par e-mail à la première soumission.
-- [ ] `contactEmail` et `siteUrl` corrects.
+- [x] `provider: 'emailjs'`, `fallbackProvider: 'formsubmit'` dans les 4 pages.
+- [x] `responsable` = manajahelvin@gmail.com, `chef` = ifeminformatique@gmail.com,
+      `contactEmail` = ifeminformatique@gmail.com.
+- [ ] Compte EmailJS créé et **service Gmail relié à ifeminformatique@gmail.com**.
+- [ ] Gabarit unique créé (`{{to_email}}`, `{{cc}}`, `{{subject}}`, `{{reply_to}}`,
+      `{{{message}}}`).
+- [ ] `publicKey`, `serviceId`, `templateId` renseignés **dans les 4 pages**.
+- [ ] Une demande test produit bien **3 e-mails**, tous expédiés par
+      ifeminformatique@gmail.com, et « Répondre » écrit au prospect.
+- [ ] Repli FormSubmit activé une fois (lien d'activation reçu par e-mail).
+- [ ] Alerte de quota surveillée (80 % / 95 % / 100 % des 200 envois mensuels).
 - [ ] `boite-de-reception.html` **non publiée**.
-- [ ] Un test réel produit bien 2 e-mails, et « Répondre » écrit au prospect.
-- [ ] Politique de confidentialité à jour (finalité, durée, sous-traitant du relais).
+- [ ] Politique de confidentialité à jour (EmailJS + Google, finalité, durée).
 - [ ] `robots.txt` / `noindex` conservés sur la boîte locale.

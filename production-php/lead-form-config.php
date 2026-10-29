@@ -8,8 +8,13 @@
  *   2. Passer `enabled` à true.
  *
  * Les destinataires sont déjà renseignés :
+ *   expéditeur des trois e-mails : ifeminformatique@gmail.com
  *   responsable : manajahelvin@gmail.com
  *   chef de département (Cc) : ifeminformatique@gmail.com
+ *
+ * Pour envoyer depuis cette boîte Gmail sans dépendre de l'hébergeur, utiliser
+ * le transport 'smtp' ci-dessous avec smtp.gmail.com:587 et un mot de passe
+ * d'application Google (compte → Sécurité → Validation en deux étapes).
  *
  * Tant que `enabled` est à false, l'endpoint répond 503 « not_configured »
  * et le formulaire affiche un message d'indisponibilité avec une adresse de repli.
@@ -47,7 +52,7 @@ return array(
 
     // Adresse affichée dans l'e-mail de confirmation (« répondez-nous ici »).
     'reply_to' => array(
-        'email' => 'manajahelvin@gmail.com', // adresse d'expédition (voir SPF/DKIM)
+        'email' => 'ifeminformatique@gmail.com', // expéditeur des trois e-mails
         'name'  => 'HelloLead',
     ),
 
@@ -64,7 +69,7 @@ return array(
         'lead-assurances' => array(
             'label'       => 'Assurances pro',
             'responsable' => array('manajahelvin@gmail.com'),
-            'chef'        => array('ifeminformatique@gmail.com'), // ⚠️ à remplacer
+            'chef'        => array('ifeminformatique@gmail.com'),
             'besoins'     => array(
                 'Assurances professionnelles I.A.R.D',
                 'Assurances protection sociale Individuelle',
@@ -78,7 +83,7 @@ return array(
         'lead-assurances-rcs' => array(
             'label'       => 'Assurances pro (RCS)',
             'responsable' => array('manajahelvin@gmail.com'),
-            'chef'        => array('ifeminformatique@gmail.com'), // ⚠️ à remplacer
+            'chef'        => array('ifeminformatique@gmail.com'),
             'besoins'     => array(
                 'Assurances professionnelles I.A.R.D',
                 'Assurances protection sociale Individuelle',

@@ -1,7 +1,7 @@
 # Relais e-mail PHP — optionnel
 
 Ce dossier n'est **pas utilisé** par le formulaire : les 4 pages fonctionnent
-en JavaScript pur (`provider: 'emailjs'`, repli `formsubmit`), sans serveur.
+en JavaScript pur (`provider: 'gas'`, relais Gmail Apps Script ; repli `formsubmit`), sans serveur.
 
 Les adresses y sont déjà renseignées : `ifeminformatique@gmail.com` (expéditeur
 des trois e-mails et adresse de réponse de la confirmation) et

@@ -486,7 +486,7 @@ a.no-theme-style {
 	     Étape 1 : volume de leads / mois · Étape 2 : coordonnées, besoins et volume souhaité.
 	     Aucun back-end : la configuration se règle dans window.HL_LEAD_CONFIG, en tête du
 	     script en bas de ce widget (provider, adresses responsable et chef de département).
-	     provider 'emailjs' (actif) : les trois e-mails (responsable, chef de département,
+	     provider 'gas' (actif) : les trois e-mails (responsable, chef de département,
 	     confirmation au client) partent de la même boîte dédiée, sans serveur.
 	     provider 'local' : rien ne part et les demandes restent consultables dans
 	     /boite-de-reception.html.
@@ -1140,16 +1140,21 @@ a.no-theme-style {
 					/* ----------------------------------------------------------------------
 					   Configuration de l'envoi — le seul endroit à modifier.
 					   provider : 'local'      → enregistre dans ce navigateur (aucun serveur)
-					              'emailjs'    → envoi réel depuis la boîte dédiée (clés EmailJS, repli FormSubmit)
+					              'gas'        → envoi réel par la boîte dédiée (relais Apps Script)
+					              'emailjs'    → envoi réel depuis la boîte dédiée (clés EmailJS)
 					              'formsubmit' → relais d'e-mail sans back-end (voir formsubmit.email)
 					              'web3forms'  → relais d'e-mail sans back-end (voir web3forms.accessKey)
 					              'endpoint'   → POST JSON vers endpoint (PHP, serverless, API)
 					   ---------------------------------------------------------------------- */
 					window.HL_LEAD_CONFIG = {
 					  // Les trois e-mails (responsable, chef de département, client) partent de
-					  // la même boîte : ifeminformatique@gmail.com, reliée au service EmailJS.
-					  provider: 'emailjs',
+					  // la même boîte : ifeminformatique@gmail.com, via le relais Google Apps
+					  // Script installé dans cette boîte (production-gas/).
+					  provider: 'gas',
 					  senderName: 'HelloLead',
+
+					  // true = le chef reçoit AUSSI une copie du message au responsable.
+					  ccChef: false,
 
 					  // Adresse affichée au prospect pour répondre (Reply-To de la confirmation).
 					  contactEmail: 'ifeminformatique@gmail.com',
@@ -1158,15 +1163,18 @@ a.no-theme-style {
 
 					  endpoint: '',
 
-					  // EmailJS (gratuit) — dashboard.emailjs.com
-					  //   publicKey  : Account → General  → Public Key
-					  //   serviceId  : Email Services     → identifiant du compte Gmail relié
-					  //   templateId : Email Templates    → gabarit unique (voir FORMULAIRE-LEAD.md)
-					  // ccChef : true pour mettre aussi le chef en copie du message au responsable.
-					  emailjs: { publicKey: '', serviceId: '', templateId: '', ccChef: false },
+					  // Relais Google Apps Script — production-gas/Code.gs, déployé depuis la
+					  // boîte ifeminformatique@gmail.com (voir FORMULAIRE-LEAD.md, § 3) :
+					  //   url   : « Application web » → URL terminée par /exec
+					  //   token : même valeur que la constante TOKEN du script
+					  gas: { url: '', token: '' },
 
-					  // Tant que les clés EmailJS sont vides, les demandes partent par FormSubmit :
-					  // aucune perte, et bascule automatique dès qu'elles sont renseignées.
+					  // EmailJS — solution équivalente si un service tiers est préféré
+					  // (gratuit, 200 envois/mois) : dashboard.emailjs.com
+					  emailjs: { publicKey: '', serviceId: '', templateId: '' },
+
+					  // Tant que le relais Gmail n'est pas configuré (url et token vides) — ou
+					  // s'il refuse — les demandes partent par FormSubmit : aucune perte.
 					  fallbackProvider: 'formsubmit',
 					  formsubmit: { alias: '', email: 'manajahelvin@gmail.com' },
 
@@ -1176,7 +1184,7 @@ a.no-theme-style {
 					    key: 'lead-assurances',
 					    label: 'Assurances pro',
 					    responsable: ['manajahelvin@gmail.com'],   // destinataire principal (À)
-					    chef: ['ifeminformatique@gmail.com']                  // chef de département, e-mail dédié
+					    chef: ['ifeminformatique@gmail.com']        // chef de département, e-mail dédié
 					  }
 					};
 
@@ -1656,6 +1664,7 @@ a.no-theme-style {
 					  /* ------------------------------------------------------------------
 					     Fournisseurs d'envoi
 					     local       : enregistre dans le navigateur (aucun réseau)
+					     gas         : envoi réel (3 e-mails) par la boîte elle-même (Apps Script)
 					     emailjs     : envoi réel (3 e-mails) depuis une boîte reliée à EmailJS
 					     formsubmit  : relais d'e-mail sans serveur (clé = adresse destinataire)
 					     web3forms   : relais d'e-mail sans serveur (clé = access key)
@@ -1735,7 +1744,7 @@ a.no-theme-style {
 					    var mails = buildEmails(data);
 					    var responsable = listOf(FORM_CFG.responsable);
 					    var chef = listOf(FORM_CFG.chef);
-					    var withChefCopy = cfg.ccChef === true;
+					    var withChefCopy = CONFIG.ccChef === true;
 
 					    function push(label, to, cc, replyTo, subject, html, text) {
 					      if (!to.length) {
@@ -1811,6 +1820,98 @@ a.no-theme-style {
 					      };
 					    });
 					  }
+
+				  /* Google Apps Script : un seul POST porte les trois messages, exécuté par
+				     la boîte elle-même (production-gas/Code.gs). Le corps part en
+				     « text/plain » : c'est le seul type simple pour CORS, Apps Script ne
+				     sait pas répondre à une requête de pré-vérification. */
+				  function sendGas(data) {
+				    var cfg = CONFIG.gas || {};
+				    if (!cfg.url || !cfg.token) {
+				      return Promise.reject({ status: 503, payload: { code: 'not_configured' } });
+				    }
+
+				    var mails = buildEmails(data);
+				    var responsable = listOf(FORM_CFG.responsable);
+				    var chef = listOf(FORM_CFG.chef);
+				    var withChefCopy = CONFIG.ccChef === true;
+
+				    if (!responsable.length || !mails || !mails.internal || !mails.client) {
+				      return Promise.reject({ status: 503, payload: { code: 'not_configured' } });
+				    }
+
+				    var payload = {
+				      token: cfg.token,
+				      from_name: CONFIG.senderName || 'HelloLead',
+				      form: FORM_CFG.label || data.formulaire,
+				      lead_id: data.lead_id,
+				      messages: [
+				        {
+				          role: 'responsable',
+				          to: responsable.join(','),
+				          cc: withChefCopy ? chef.join(',') : '',
+				          reply_to: data.email,
+				          subject: mails.internal.subject,
+				          html: mails.internal.html,
+				          text: mails.internal.text
+				        },
+				        {
+				          role: 'chef',
+				          to: chef.join(','),
+				          cc: '',
+				          reply_to: data.email,
+				          subject: '[Copie] ' + mails.internal.subject,
+				          html: mails.internal.html,
+				          text: mails.internal.text
+				        },
+				        {
+				          role: 'client',
+				          to: data.email,
+				          cc: '',
+				          reply_to: CONTACT_EMAIL,
+				          subject: mails.client.subject,
+				          html: mails.client.html,
+				          text: mails.client.text
+				        }
+				      ]
+				    };
+
+				    return postRaw(cfg.url, payload, 'text/plain;charset=utf-8').then(function (res) {
+				      var out = {};
+				      try { out = JSON.parse(String(res && res.text || '')) || {}; } catch (error) { out = {}; }
+				      var sent = out.sent || {};
+
+				      // Le script répond toujours 200 avec un objet ; un statut HTTP
+				      // différent (proxy, URL erronée) est traité comme une panne.
+				      if (res.status !== 200 || out.ok !== true) {
+				        var kind = out.error === 'quota' ? 'quota'
+				          : (out.error === 'token' || out.error === 'invalid' || out.error === 'setup') ? 'config'
+				          : 'unknown';
+
+				        return {
+				          status: res.status === 200 ? 502 : res.status,
+				          payload: {
+				            ok: false,
+				            code: 'relay',
+				            relayKind: kind,
+				            mode: 'gas',
+				            message: String(out.error || (res && res.text) || '').slice(0, 200),
+				            sent: sent
+				          }
+				        };
+				      }
+
+				      return {
+				        status: 200,
+				        payload: {
+				          ok: true,
+				          mode: 'gas',
+				          sent: { responsable: true, chef: sent.chef === true, client: sent.client === true },
+				          partial: sent.chef !== true || sent.client !== true
+				        }
+				      };
+				    });
+				  }
 
 					  function sendFormSubmit(data) {
 					    var settings = CONFIG.formsubmit || {};
@@ -1908,6 +2009,7 @@ a.no-theme-style {
 					  }
 
 					  function dispatch(provider, data) {
+					    if (provider === 'gas') { return sendGas(data); }
 					    if (provider === 'emailjs') { return sendEmailJS(data); }
 					    if (provider === 'formsubmit') { return sendFormSubmit(data); }
 					    if (provider === 'web3forms') { return sendWeb3Forms(data); }
@@ -1983,7 +2085,7 @@ a.no-theme-style {
 					   * EmailJS répond « OK » en texto sur succès : postJson (qui parse du JSON)
 					   * ne suffit pas pour juger du résultat.
 					   */
-					  function postRaw(url, payload) {
+					  function postRaw(url, payload, contentType) {
 					    return new Promise(function (resolve, reject) {
 					      var timeout = window.setTimeout(function () {
 					        reject({ status: 0, payload: null, reason: 'timeout' });
@@ -1992,7 +2094,7 @@ a.no-theme-style {
 					      if (typeof window.fetch === 'function') {
 					        window.fetch(url, {
 					          method: 'POST',
-					          headers: { 'Content-Type': 'application/json' },
+					          headers: { 'Content-Type': contentType || 'application/json' },
 					          body: JSON.stringify(payload)
 					        }).then(function (response) {
 					          return response.text().then(function (text) {
@@ -2008,7 +2110,7 @@ a.no-theme-style {
 
 					      var xhr = new XMLHttpRequest();
 					      xhr.open('POST', url, true);
-					      xhr.setRequestHeader('Content-Type', 'application/json');
+					      xhr.setRequestHeader('Content-Type', contentType || 'application/json');
 					      xhr.timeout = 20000;
 					      xhr.onload = function () {
 					        window.clearTimeout(timeout);

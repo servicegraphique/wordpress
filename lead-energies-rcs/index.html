@@ -482,11 +482,12 @@ a.no-theme-style {
 		<div class="elementor-element elementor-element-7e792320 e-con-full e-flex e-con e-child" data-id="7e792320" data-element_type="container">
 				<div class="elementor-element elementor-element-6800ce6c elementor-widget elementor-widget-html" data-id="6800ce6c" data-element_type="widget" data-widget_type="html.default">
 				<div class="elementor-widget-container">
-										<!-- Formulaire de lead HelloLead – 2 étapes + envoi par e-mail.
+										<!-- Formulaire de lead HelloLead – 2 étapes, 100 % JavaScript.
 	     Étape 1 : volume de leads / mois · Étape 2 : coordonnées, besoins et volume souhaité.
-	     Envoi : POST JSON vers /lead-form-mail.php — notification au responsable + copie au chef de
-	     département + confirmation au prospect. Configuration : lead-form-config.php.
-	     Endpoint injoignable : message de repli avec l’adresse contact@hellolead.fr. -->
+	     Aucun back-end : la configuration se règle dans window.HL_LEAD_CONFIG, en tête du
+	     script en bas de ce widget (provider, adresses responsable et chef de département).
+	     Mode local : les demandes sont enregistrées dans le navigateur et consultables
+	     dans /boite-de-reception.html, avec les deux e-mails générés. -->
 					<style>
 					/* =====================================================================
 					   Formulaire de lead Hellodevis – 2 étapes (volume -> coordonnées)
@@ -989,8 +990,30 @@ a.no-theme-style {
 					    animation-duration: 0.001ms !important;
 					  }
 					}
+
+					.hl-lead-form .hl-lf-demo {
+					  margin: 12px 0 0;
+					  padding: 10px 12px;
+					  border: 1px dashed #d7dbe0;
+					  border-radius: 9px;
+					  background: #fbfbfc;
+					  font-size: 12px;
+					  line-height: 1.55;
+					  color: #5b6470;
+					  text-align: center;
+					}
+
+					.hl-lead-form .hl-lf-demo a,
+					.hl-lead-form .hl-lf-success__email a {
+					  color: var(--hl-red);
+					  font-weight: 600;
+					  text-decoration: underline;
+					}
+
+					.hl-lead-form .hl-lf-demo a:hover,
+					.hl-lead-form .hl-lf-success__email a:hover { color: var(--hl-red-dark); }
 					</style>
-					<div class="hl-lead-form" data-hl-form="lead-energies-rcs" data-endpoint="/lead-form-mail.php" data-fallback-email="contact@hellolead.fr">
+					<div class="hl-lead-form" data-hl-form="lead-energies-rcs" data-fallback-email="contact@hellodevis.fr">
 						<div class="hl-lf-card">
 							<div class="hl-lf-head">
 								<h2 class="hl-lf-title">Parlons de votre projet</h2>
@@ -1046,7 +1069,7 @@ a.no-theme-style {
 									</div>
 									<div class="hl-lf-field">
 										<label class="hl-lf-sr-only" for="hl-lf-cp-energies-rcs">Code postal (obligatoire)</label>
-										<input class="hl-lf-input" id="hl-lf-cp-energies-rcs" name="code_postal" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="Code postal*" aria-required="true">
+										<input class="hl-lf-input" id="hl-lf-cp-energies-rcs" name="code_postal" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="Code postal*" aria-required="true">
 										<p class="hl-lf-error" role="alert" hidden>Merci d’indiquer un code postal à 5 chiffres.</p>
 									</div>
 									<div class="hl-lf-field">
@@ -1115,13 +1138,41 @@ a.no-theme-style {
 					</div>
 
 					<script>
+					/* ----------------------------------------------------------------------
+					   Configuration de l'envoi — le seul endroit à modifier.
+					   provider : 'local'      → enregistre dans ce navigateur (aucun serveur)
+					              'formsubmit' → relais d'e-mail sans back-end (voir formsubmit.email)
+					              'web3forms'  → relais d'e-mail sans back-end (voir web3forms.accessKey)
+					              'endpoint'   → POST JSON vers endpoint (PHP, serverless, API)
+					   ---------------------------------------------------------------------- */
+					window.HL_LEAD_CONFIG = {
+					  provider: 'local',
+					  contactEmail: 'contact@hellodevis.fr',
+					  siteUrl: 'https://www.hellodevis.fr',
+					  inboxUrl: '/boite-de-reception.html',
+					  endpoint: '',
+					  formsubmit: { email: '' },          // ex. 'contact@hellodevis.fr'
+					  web3forms: { accessKey: '' },
+					  form: {
+					    key: 'lead-energies-rcs',
+					    label: 'Énergies pro (RCS)',
+					    responsable: ['responsable.energies@hellodevis.fr'],   // destinataire principal
+					    chef: ['chef.departement.energies@hellodevis.fr']                  // chef de département, en copie
+					  }
+					};
+
 					/* =====================================================================
-					   Formulaire de lead HelloLead — 2 étapes + envoi serveur
+					   Formulaire de lead HelloLead — 2 étapes, 100 % JavaScript
 					   - Étape 1 : volume de leads souhaité (select accessible)
 					   - Étape 2 : nom, e-mail, téléphone, code postal, société, besoins, volume
-					   - Envoi POST JSON vers lead-form-mail.php (notification responsable +
-					     copie chef de département + confirmation prospect)
-					   Aucune dépendance (pas de jQuery).
+					   - Envoi : fournisseur configurable (window.HL_LEAD_CONFIG)
+					       local      → enregistre la demande dans le navigateur (défaut),
+					                    génère les deux e-mails et les garde consultables dans
+					                    /boite-de-reception.html. Aucun serveur, aucun réseau.
+					       formsubmit → relais d'e-mail sans back-end (adresse destinataire)
+					       web3forms  → relais d'e-mail sans back-end (access key)
+					       endpoint   → POST JSON vers une URL (PHP, serverless, API interne)
+					   Aucune dépendance (ni jQuery, ni framework).
 					   ===================================================================== */
 					(function () {
 					  'use strict';
@@ -1331,6 +1382,359 @@ a.no-theme-style {
 					  }
 
 					  /* ------------------------------------------------------------------
+					     Configuration
+					     Surchargée par window.HL_LEAD_CONFIG, injecté dans la page juste
+					     au-dessus de ce script. Aucune requête réseau n'est nécessaire.
+					     ------------------------------------------------------------------ */
+
+					  var CONFIG = (window.HL_LEAD_CONFIG && typeof window.HL_LEAD_CONFIG === 'object') ? window.HL_LEAD_CONFIG : {};
+					  var PROVIDER = String(CONFIG.provider || 'local').toLowerCase();
+					  var FORM_CFG = CONFIG.form || {};
+					  var CONTACT_EMAIL = CONFIG.contactEmail || '';
+					  var SITE_URL = String(CONFIG.siteUrl || '').replace(/\/+$/, '');
+					  var INBOX_URL = CONFIG.inboxUrl || '/boite-de-reception.html';
+					  var MAX_LEADS = 200;
+					  var STORE_KEY = 'hl.leads.v1';
+
+					  function listOf(value) {
+					    if (!value) { return []; }
+					    if (Object.prototype.toString.call(value) === '[object Array]') {
+					      return value.filter(function (item) { return !!item; });
+					    }
+					    return String(value).split(',').map(function (item) { return item.trim(); }).filter(function (item) { return !!item; });
+					  }
+
+					  function esc(value) {
+					    return String(value == null ? '' : value)
+					      .replace(/&/g, '&amp;')
+					      .replace(/</g, '&lt;')
+					      .replace(/>/g, '&gt;')
+					      .replace(/"/g, '&quot;')
+					      .replace(/'/g, '&#39;');
+					  }
+
+					  function pad2(value) { return value < 10 ? '0' + value : String(value); }
+
+					  function dateFr(iso) {
+					    var date = iso ? new Date(iso) : new Date();
+					    if (isNaN(date.getTime())) { date = new Date(); }
+					    return pad2(date.getDate()) + '/' + pad2(date.getMonth() + 1) + '/' + date.getFullYear()
+					      + ' ' + pad2(date.getHours()) + ':' + pad2(date.getMinutes());
+					  }
+
+					  function firstNameOf(name) {
+					    var match = String(name || '').trim().match(/^(\S+)/);
+					    return match ? match[1] : String(name || '').trim();
+					  }
+
+					  /* ------------------------------------------------------------------
+					     Fabrication des e-mails
+					     Miroir des gabarits servis en production : mêmes libellés, même mise
+					     en page, mêmes informations. Ce sont ces messages que la boîte de
+					     réception locale affiche.
+					     ------------------------------------------------------------------ */
+
+					  function emailShell(title, intro, contentHtml, footerHtml) {
+					    return '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">'
+					      + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+					      + '<title>' + esc(title) + '</title></head>'
+					      + '<body style="margin:0;padding:24px 12px;background:#f4f5f7;'
+					      + 'font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;color:#14171a;">'
+					      + '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" '
+					      + 'style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e6e8ec;border-radius:14px;overflow:hidden;">'
+					      + '<tr><td style="height:4px;background:#eb5846;font-size:0;line-height:0;">&nbsp;</td></tr>'
+					      + '<tr><td style="padding:26px 28px 4px;">'
+					      + '<div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:#eb5846;margin:0 0 10px;">HELLOLEAD</div>'
+					      + '<h1 style="margin:0 0 10px;font-size:22px;line-height:1.25;font-weight:800;color:#14171a;">' + esc(title) + '</h1>'
+					      + (intro ? '<p style="margin:0 0 18px;font-size:14.5px;line-height:1.6;color:#4b5563;">' + intro + '</p>' : '')
+					      + '</td></tr>'
+					      + '<tr><td style="padding:0 28px 24px;">' + contentHtml + '</td></tr>'
+					      + (footerHtml
+					        ? '<tr><td style="padding:16px 28px 22px;border-top:1px solid #eceef1;background:#fafbfc;'
+					          + 'font-size:12px;line-height:1.6;color:#7b8494;">' + footerHtml + '</td></tr>'
+					        : '')
+					      + '</table></body></html>';
+					  }
+
+					  function recapHtml(rows) {
+					    var body = '';
+					    rows.forEach(function (row, index) {
+					      var zebra = index % 2 ? 'background:#f7f8fa;' : '';
+					      body += '<tr>'
+					        + '<th align="left" style="padding:9px 12px;width:42%;vertical-align:top;font-size:13px;font-weight:600;'
+					        + 'color:#5b6470;border-bottom:1px solid #eceef1;' + zebra + '">' + esc(row[0]) + '</th>'
+					        + '<td style="padding:9px 12px;font-size:13.5px;color:#14171a;border-bottom:1px solid #eceef1;'
+					        + zebra + '">' + esc(row[1]) + '</td>'
+					        + '</tr>';
+					    });
+
+					    return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" '
+					      + 'style="border-collapse:collapse;margin:0 0 6px;">' + body + '</table>';
+					  }
+
+					  function recapText(rows) {
+					    var labelWidth = 0;
+					    rows.forEach(function (row) {
+					      labelWidth = Math.max(labelWidth, String(row[0]).length);
+					    });
+
+					    return rows.map(function (row) {
+					      var label = String(row[0]);
+					      while (label.length < labelWidth) { label += ' '; }
+					      return label + ' : ' + row[1];
+					    }).join('\n');
+					  }
+
+					  function recapRows(data, options) {
+					    var opts = options || {};
+					    var rows = [
+					      ['Nom et prénom', data.nom],
+					      ['Société', data.societe],
+					      ['E-mail', data.email],
+					      ['Téléphone', data.telephone],
+					      ['Code postal', data.code_postal],
+					      ['Volume souhaité', data.volume + ' leads / mois'],
+					      ['Besoins', (data.besoins && data.besoins.length) ? data.besoins.join(' · ') : 'Non précisé']
+					    ];
+
+					    if (!opts.client) {
+					      rows.push(['Formulaire', opts.label || '']);
+					      rows.push(['Page d’origine', data.page || '—']);
+					      rows.push(['Reçue le', dateFr()]);
+					      rows.push(['Référence', data.lead_id || '—']);
+
+					      var utm = data.utm || {};
+					      var keys = Object.keys(utm);
+					      if (keys.length) {
+					        rows.push(['Traçage', keys.map(function (key) { return key + '=' + utm[key]; }).join(' · ')]);
+					      }
+					    }
+
+					    return rows;
+					  }
+
+					  function buildEmails(data) {
+					    var label = FORM_CFG.label || data.formulaire;
+					    var responsable = listOf(FORM_CFG.responsable);
+					    var chef = listOf(FORM_CFG.chef);
+					    var needs = (data.besoins && data.besoins.length) ? data.besoins.join(', ') : 'non précisé';
+					    var footerBase = 'Demande reçue via ' + (SITE_URL || 'le site') + ' — ' + dateFr();
+
+					    /* 1. Notification interne */
+					    var internalHtml = emailShell(
+					      'Nouvelle demande de lead',
+					      'Nouvelle demande de lead : ' + esc(data.societe) + ' (' + esc(data.nom) + ') — ' + esc(data.volume) + ' leads/mois.',
+					      recapHtml(recapRows(data, { label: label }))
+					        + '<div style="margin-top:20px;padding:14px 16px;background:#fff7f5;border:1px solid #f6d5ce;border-radius:10px;'
+					        + 'font-size:13.5px;line-height:1.55;color:#7a2a20;">'
+					        + '<strong style="display:block;margin-bottom:6px;color:#a3352a;">Action attendue</strong>'
+					        + 'Recontacter ce prospect par téléphone ou par e-mail. Répondez directement à cet e-mail pour lui écrire.'
+					        + '</div>',
+					      footerBase + '<br>Référence : ' + esc(data.lead_id || '—')
+					    );
+
+					    var internalText = 'NOUVELLE DEMANDE DE LEAD\n'
+					      + '========================\n\n'
+					      + recapText(recapRows(data, { label: label })) + '\n\n'
+					      + 'Besoins : ' + needs + '\n'
+					      + 'Action attendue : recontacter ce prospect par téléphone ou par e-mail.\n'
+					      + 'Répondez directement à cet e-mail pour lui écrire.\n';
+
+					    /* 2. Confirmation prospect */
+					    var contact = CONTACT_EMAIL;
+					    var clientHtml = emailShell(
+					      'Votre demande a bien été reçue',
+					      'Bonjour ' + esc(firstNameOf(data.nom)) + ', nous avons bien reçu votre demande : une équipe s’en charge.',
+					      '<p style="margin:0 0 14px;font-size:14.5px;line-height:1.6;color:#2f3033;">'
+					        + 'Merci de votre confiance. Votre demande de leads <strong>' + esc(label) + '</strong> a bien été enregistrée '
+					        + 'et a été transmise à notre équipe commerciale, qui en prend le suivi.</p>'
+					        + '<p style="margin:0 0 18px;font-size:14.5px;line-height:1.6;color:#2f3033;">'
+					        + 'Un expert HelloLead revient vers vous pour préciser votre besoin et vous proposer un plan de leads adapté. '
+					        + 'Aucune action n’est nécessaire de votre part pour le moment.</p>'
+					        + '<div style="margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#7b8494;font-weight:700;">'
+					        + 'Récapitulatif de votre demande</div>'
+					        + recapHtml(recapRows(data, { client: true }))
+					        + '<p style="margin:18px 0 0;font-size:13.5px;line-height:1.6;color:#4b5563;">'
+					        + 'Une question ? Répondez simplement à cet e-mail'
+					        + (contact ? ' ou écrivez-nous à <a href="mailto:' + esc(contact) + '" style="color:#eb5846;text-decoration:none;">'
+					          + esc(contact) + '</a>' : '')
+					        + '.</p>',
+					      'Vous recevez cet e-mail car vous avez envoyé une demande depuis ' + esc(SITE_URL || 'notre site') + '.<br>'
+					        + 'Vos données sont traitées conformément à notre <a href="' + esc(SITE_URL)
+					        + '/politique-de-confidentialite-donnees-personnelles/" style="color:#eb5846;text-decoration:none;">'
+					        + 'politique de confidentialité</a>.'
+					    );
+
+					    var clientText = 'Bonjour ' + firstNameOf(data.nom) + ',\n\n'
+					      + 'Nous avons bien reçu votre demande : une équipe s’en charge.\n\n'
+					      + 'Merci de votre confiance. Votre demande de leads ' + label + ' a bien été enregistrée\n'
+					      + 'et a été transmise à notre équipe commerciale, qui en prend le suivi.\n\n'
+					      + 'Un expert HelloLead revient vers vous pour préciser votre besoin et vous proposer\n'
+					      + 'un plan de leads adapté. Aucune action n’est nécessaire de votre part pour le moment.\n\n'
+					      + 'Récapitulatif de votre demande\n'
+					      + '-----------------------------\n'
+					      + recapText(recapRows(data, { client: true })) + '\n\n'
+					      + 'Une question ? Répondez simplement à cet e-mail'
+					      + (contact ? ' ou écrivez-nous à ' + contact : '') + '.\n\n'
+					      + '--\nHelloLead\n' + SITE_URL + '\n';
+
+					    return {
+					      internal: {
+					        to: responsable,
+					        cc: chef,
+					        replyTo: data.email,
+					        subject: '[Lead ' + label + '] ' + data.societe + ' — ' + data.volume + ' leads/mois',
+					        html: internalHtml,
+					        text: internalText
+					      },
+					      client: {
+					        to: [data.email],
+					        cc: [],
+					        replyTo: contact,
+					        subject: 'Votre demande a bien été reçue — HelloLead',
+					        html: clientHtml,
+					        text: clientText
+					      }
+					    };
+					  }
+
+					  /* ------------------------------------------------------------------
+					     Stockage local (la « boîte de réception »)
+					     ------------------------------------------------------------------ */
+
+					  function readStore() {
+					    try {
+					      var raw = window.localStorage.getItem(STORE_KEY);
+					      var list = raw ? JSON.parse(raw) : [];
+					      return Object.prototype.toString.call(list) === '[object Array]' ? list : [];
+					    } catch (error) {
+					      return [];
+					    }
+					  }
+
+					  function writeStore(list) {
+					    try {
+					      window.localStorage.setItem(STORE_KEY, JSON.stringify(list));
+					      return true;
+					    } catch (error) {
+					      return false;
+					    }
+					  }
+
+					  function storeLead(lead) {
+					    var list = readStore();
+					    for (var i = 0; i < list.length; i++) {
+					      if (list[i] && list[i].id === lead.id) { return { saved: true, duplicate: true }; }
+					    }
+					    list.unshift(lead);
+					    var saved = writeStore(list.slice(0, MAX_LEADS));
+					    return { saved: saved, duplicate: false };
+					  }
+
+					  /* ------------------------------------------------------------------
+					     Fournisseurs d'envoi
+					     local       : enregistre dans le navigateur (aucun réseau)
+					     formsubmit  : relais d'e-mail sans serveur (clé = adresse destinataire)
+					     web3forms   : relais d'e-mail sans serveur (clé = access key)
+					     endpoint    : POST JSON vers une URL (PHP, serverless, API interne)
+					     ------------------------------------------------------------------ */
+
+					  function sendLocal(data) {
+					    return new Promise(function (resolve) {
+					      var delay = 380 + Math.floor(Math.random() * 260);
+					      window.setTimeout(function () {
+					        var result;
+					        try {
+					          result = storeLead({
+					            id: data.lead_id || ('hl-' + Date.now().toString(36)),
+					            receivedAt: new Date().toISOString(),
+					            form: data.formulaire,
+					            label: FORM_CFG.label || data.formulaire,
+					            page: data.page,
+					            provider: 'local',
+					            data: data,
+					            emails: buildEmails(data)
+					          });
+					        } catch (error) {
+					          result = { saved: false, duplicate: false };
+					        }
+
+					        resolve({
+					          status: 200,
+					          payload: { ok: true, mode: 'local', stored: !!result.saved, duplicate: !!result.duplicate }
+					        });
+					      }, delay);
+					    });
+					  }
+
+					  function sendFormSubmit(data) {
+					    var target = (CONFIG.formsubmit && CONFIG.formsubmit.email) || '';
+					    if (!target) {
+					      return Promise.reject({ status: 503, payload: { code: 'not_configured' } });
+					    }
+
+					    var body = {
+					      _subject: '[Lead ' + (FORM_CFG.label || data.formulaire) + '] ' + data.societe + ' — ' + data.volume + ' leads/mois',
+					      _template: 'table',
+					      _captcha: 'false',
+					      _replyto: data.email,
+					      nom: data.nom,
+					      email: data.email,
+					      telephone: data.telephone,
+					      code_postal: data.code_postal,
+					      societe: data.societe,
+					      volume: data.volume,
+					      besoins: (data.besoins || []).join(', '),
+					      page: data.page,
+					      lead_id: data.lead_id
+					    };
+
+					    var cc = listOf(FORM_CFG.chef);
+					    if (cc.length) { body._cc = cc.join(','); }
+
+					    return postJson('https://formsubmit.co/ajax/' + encodeURIComponent(target), body);
+					  }
+
+					  function sendWeb3Forms(data) {
+					    var key = (CONFIG.web3forms && CONFIG.web3forms.accessKey) || '';
+					    if (!key) {
+					      return Promise.reject({ status: 503, payload: { code: 'not_configured' } });
+					    }
+
+					    return postJson('https://api.web3forms.com/submit', {
+					      access_key: key,
+					      subject: '[Lead ' + (FORM_CFG.label || data.formulaire) + '] ' + data.societe + ' — ' + data.volume + ' leads/mois',
+					      from_name: 'HelloLead',
+					      replyto: data.email,
+					      nom: data.nom,
+					      email: data.email,
+					      telephone: data.telephone,
+					      code_postal: data.code_postal,
+					      societe: data.societe,
+					      volume: data.volume,
+					      besoins: (data.besoins || []).join(', '),
+					      page: data.page,
+					      lead_id: data.lead_id
+					    });
+					  }
+
+					  function sendEndpoint(data) {
+					    var url = CONFIG.endpoint || '';
+					    if (!url) {
+					      return Promise.reject({ status: 503, payload: { code: 'not_configured' } });
+					    }
+
+					    return postJson(url, data);
+					  }
+
+					  function deliver(data) {
+					    if (PROVIDER === 'formsubmit') { return sendFormSubmit(data); }
+					    if (PROVIDER === 'web3forms') { return sendWeb3Forms(data); }
+					    if (PROVIDER === 'endpoint') { return sendEndpoint(data); }
+					    return sendLocal(data);
+					  }
+
+					  /* ------------------------------------------------------------------
 					     Requête réseau
 					     ------------------------------------------------------------------ */
 
@@ -1406,12 +1810,12 @@ a.no-theme-style {
 					    var alertBox = $('[data-hl-alert]', root);
 					    var submitButton = $('[data-hl-submit]', root);
 					    var successEmail = $('[data-hl-success-email]', root);
-					    var endpoint = root.getAttribute('data-endpoint') || '';
-					    var fallbackEmail = root.getAttribute('data-fallback-email') || '';
+					    var fallbackEmail = root.getAttribute('data-fallback-email') || CONTACT_EMAIL;
 					    var formName = root.getAttribute('data-hl-form') || 'lead';
 					    var tsField = form.elements['ts'];
 					    var leadIdField = form.elements['lead_id'];
 					    var honeypot = form.elements['website'];
+					    var demoNote = null;
 					    var current = 0;
 					    var submitted = false;
 					    var sending = false;
@@ -1649,20 +2053,45 @@ a.no-theme-style {
 					      try {
 					        window.dataLayer = window.dataLayer || [];
 					        var entry = { event: eventName, form: formName, page: window.location.pathname };
+					        entry.provider = PROVIDER;
 					        Object.keys(payload || {}).forEach(function (key) { entry[key] = payload[key]; });
 					        window.dataLayer.push(entry);
 					      } catch (error) { /* dataLayer indisponible */ }
 					    }
 
-					    function showSuccess(data) {
+					    function showSuccess(data, info) {
+					      var meta = info || {};
+					      var mode = meta.mode || 'remote';
+
 					      submitted = true;
+					      if (demoNote) { demoNote.hidden = true; }
 					      steps.forEach(function (step) { step.hidden = true; });
 					      if (success) { success.hidden = false; }
 					      if (fill) { fill.style.width = '100%'; }
 					      if (stepLabel) { stepLabel.textContent = 'Demande envoyée'; }
-					      if (successEmail && data.email) {
-					        successEmail.textContent = 'Une confirmation vient d’être envoyée à ' + data.email + '.';
-					        successEmail.hidden = false;
+
+					      if (successEmail) {
+					        successEmail.textContent = '';
+
+					        if (mode === 'local') {
+					          if (meta.stored === false) {
+					            successEmail.appendChild(document.createTextNode(
+					              'Mode local : la demande n’a pas pu être enregistrée (stockage du navigateur indisponible).'
+					            ));
+					          } else {
+					            successEmail.appendChild(document.createTextNode(
+					              'Mode local : demande enregistrée dans ce navigateur, aucun e-mail n’a été envoyé. '
+					            ));
+					            var inboxLink = document.createElement('a');
+					            inboxLink.href = INBOX_URL;
+					            inboxLink.textContent = 'Voir les e-mails générés';
+					            successEmail.appendChild(inboxLink);
+					          }
+					          successEmail.hidden = false;
+					        } else if (mode !== 'spam' && data.email) {
+					          successEmail.textContent = 'Une confirmation vient d’être envoyée à ' + data.email + '.';
+					          successEmail.hidden = false;
+					        }
 					      }
 
 					      var focusTarget = success ? $('.hl-lf-success__title', success) : null;
@@ -1732,26 +2161,30 @@ a.no-theme-style {
 					      }
 					      if (!validateStep2()) { return; }
 
-					      if (!endpoint) {
-					        showAlert(
-					          'Le formulaire n’est pas encore relié à notre serveur. Merci de nous écrire directement :',
-					          fallbackEmail ? { email: fallbackEmail } : undefined
-					        );
+					      var data = collect();
+
+					      // Piège à robots : on simule un succès, sans rien enregistrer.
+					      if (data.website) {
+					        setSending(true);
+					        window.setTimeout(function () {
+					          setSending(false);
+					          showSuccess(data, { mode: 'spam' });
+					          track('hl_lead_form_submit', { provider: PROVIDER, spam: true });
+					        }, 420);
 					        return;
 					      }
 
 					      hideAlert();
 					      setSending(true);
 
-					      var data = collect();
-
-					      postJson(endpoint, data).then(function (result) {
+					      deliver(data).then(function (result) {
 					        var payload = result.payload || {};
 
 					        if (result.status >= 200 && result.status < 300 && payload.ok !== false) {
 					          setSending(false);
-					          showSuccess(data);
+					          showSuccess(data, { mode: payload.mode || 'remote', stored: payload.stored });
 					          track('hl_lead_form_submit', {
+					            provider: PROVIDER,
 					            volume: data.volume,
 					            besoins: data.besoins,
 					            lead_id: data.lead_id,
@@ -1850,6 +2283,20 @@ a.no-theme-style {
 
 					    form.addEventListener('submit', submit);
 
+					    if (PROVIDER === 'local') {
+					      var note = document.createElement('p');
+					      note.className = 'hl-lf-demo';
+					      note.appendChild(document.createTextNode(
+					        'Démonstration locale : la demande est enregistrée dans ce navigateur, aucun e-mail n’est envoyé. '
+					      ));
+					      var noteLink = document.createElement('a');
+					      noteLink.href = INBOX_URL;
+					      noteLink.textContent = 'Voir la boîte de réception';
+					      note.appendChild(noteLink);
+					      root.appendChild(note);
+					      demoNote = note;
+					    }
+
 					    linkErrors();
 					    showStep(0, { focus: false });
 					    if (success) { success.hidden = true; }
@@ -1864,7 +2311,7 @@ a.no-theme-style {
 					    });
 					  }
 
-					  window.HLLeadForm = window.HLLeadForm || { init: boot };
+					  window.HLLeadForm = window.HLLeadForm || { init: boot, provider: PROVIDER, storageKey: STORE_KEY };
 
 					  if (document.readyState === 'loading') {
 					    document.addEventListener('DOMContentLoaded', boot);

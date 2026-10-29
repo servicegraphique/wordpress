@@ -8,13 +8,12 @@
  *   2. Passer `enabled` à true.
  *
  * Les destinataires sont déjà renseignés :
- *   expéditeur des trois e-mails : ifeminformatique@gmail.com
- *   responsable : manajahelvin@gmail.com
- *   chef de département (Cc) : ifeminformatique@gmail.com
+ *   responsable : cremy@hellolead.pro
+ *   chef de département (Cc) : pbenateau@hellolead.pro
+ *   adresse de réponse de la confirmation : pbenateau@hellolead.pro
  *
- * Pour envoyer depuis cette boîte Gmail sans dépendre de l'hébergeur, utiliser
- * le transport 'smtp' ci-dessous avec smtp.gmail.com:587 et un mot de passe
- * d'application Google (compte → Sécurité → Validation en deux étapes).
+ * Pour expédier depuis le domaine hellolead.pro, utiliser le transport 'smtp'
+ * ci-dessous avec les identifiants de la boîte (SPF/DKIM du domaine requis).
  *
  * Tant que `enabled` est à false, l'endpoint répond 503 « not_configured »
  * et le formulaire affiche un message d'indisponibilité avec une adresse de repli.
@@ -46,13 +45,13 @@ return array(
      * Expéditeur et réponse
      * --------------------------------------------------------------- */
     'from' => array(
-        'email' => 'no-reply@hellolead.fr', // ⚠️ à adapter au domaine réel
+        'email' => 'pbenateau@hellolead.pro', // boîte réelle du domaine
         'name'  => 'HelloLead',
     ),
 
     // Adresse affichée dans l'e-mail de confirmation (« répondez-nous ici »).
     'reply_to' => array(
-        'email' => 'ifeminformatique@gmail.com', // expéditeur des trois e-mails
+        'email' => 'pbenateau@hellolead.pro', // adresse de réponse de la confirmation
         'name'  => 'HelloLead',
     ),
 
@@ -68,8 +67,8 @@ return array(
 
         'lead-assurances' => array(
             'label'       => 'Assurances pro',
-            'responsable' => array('manajahelvin@gmail.com'),
-            'chef'        => array('ifeminformatique@gmail.com'),
+            'responsable' => array('cremy@hellolead.pro'),
+            'chef'        => array('pbenateau@hellolead.pro'),
             'besoins'     => array(
                 'Assurances professionnelles I.A.R.D',
                 'Assurances protection sociale Individuelle',
@@ -82,8 +81,8 @@ return array(
 
         'lead-assurances-rcs' => array(
             'label'       => 'Assurances pro (RCS)',
-            'responsable' => array('manajahelvin@gmail.com'),
-            'chef'        => array('ifeminformatique@gmail.com'),
+            'responsable' => array('cremy@hellolead.pro'),
+            'chef'        => array('pbenateau@hellolead.pro'),
             'besoins'     => array(
                 'Assurances professionnelles I.A.R.D',
                 'Assurances protection sociale Individuelle',
@@ -96,8 +95,8 @@ return array(
 
         'lead-energies' => array(
             'label'       => 'Énergies pro',
-            'responsable' => array('manajahelvin@gmail.com'),   
-            'chef'        => array('ifeminformatique@gmail.com'),
+            'responsable' => array('cremy@hellolead.pro'),   
+            'chef'        => array('pbenateau@hellolead.pro'),
             'besoins'     => array(
                 "Fourniture d'électricité",
                 'Fourniture de gaz',
@@ -111,8 +110,8 @@ return array(
 
         'lead-energies-rcs' => array(
             'label'       => 'Énergies pro (RCS)',
-            'responsable' => array('manajahelvin@gmail.com'),   
-            'chef'        => array('ifeminformatique@gmail.com'),
+            'responsable' => array('cremy@hellolead.pro'),   
+            'chef'        => array('pbenateau@hellolead.pro'),
             'besoins'     => array(
                 "Fourniture d'électricité",
                 'Fourniture de gaz',
@@ -127,7 +126,7 @@ return array(
         // Repli si le formulaire envoyé n'est pas connu.
         'default' => array(
             'label'       => 'Contact',
-            'responsable' => array('manajahelvin@gmail.com'),                
+            'responsable' => array('cremy@hellolead.pro'),                
             'chef'        => array(),
         ),
     ),

@@ -45,6 +45,15 @@ var TOKEN = 'REMPLACER-PAR-UN-JETON-LONG-ET-ALEATOIRE';
 // Nom affiché comme expéditeur dans la messagerie du destinataire.
 var SENDER_NAME = 'HelloLead';
 
+// Adresse affichée comme expéditeur.
+// - vide : les messages partent de la boîte qui héberge ce script
+//   (ifeminformatique@gmail.com), ce qui garantit SPF/DKIM sans réglage ;
+// - renseignée (ex. 'pbenateau@hellolead.pro') : l'envoi utilise cet alias,
+//   à condition qu'il soit déclaré et vérifié dans Gmail → Paramètres →
+//   Comptes → « Envoyer des e-mails en tant que ». En cas de refus, le script
+//   se rabat silencieusement sur la boîte qui l'héberge : rien n'est perdu.
+var FROM_ADDRESS = '';
+
 // Garde-fou : 3 e-mails par demande, et Gmail limite les comptes personnels
 // à 100 e-mails/jour via Apps Script. 30 demandes/jour laissent une marge.
 var MAX_LEADS_PER_DAY = 30;
@@ -102,7 +111,7 @@ function doPost(e) {
         throw new Error('message incomplet');
       }
 
-      MailApp.sendEmail({
+      sendMail_({
         to: to,
         cc: isEmailList_(clean_(message.cc)) ? clean_(message.cc) : '',
         subject: subject,
@@ -136,6 +145,7 @@ function doGet() {
     ok: true,
     service: 'HelloLead',
     ready: TOKEN.indexOf('REMPLACER') !== 0 && TOKEN.length >= 20,
+    from: FROM_ADDRESS || account_(),
     remaining: remainingQuota_()
   });
 }
@@ -171,6 +181,41 @@ function testEnvoi() {
 /* --------------------------------------------------------------------------
    3. Utilitaires
    -------------------------------------------------------------------------- */
+
+/**
+ * Envoi d'un message. Passe par l'alias configuré s'il y en a un, et retombe
+ * sur la boîte qui héberge le script si Gmail refuse l'alias (non vérifié,
+ * révoqué…). Le formulaire ne voit jamais la différence : le message part.
+ */
+function sendMail_(message) {
+  if (FROM_ADDRESS) {
+    try {
+      var options = {
+        htmlBody: message.htmlBody,
+        name: message.name,
+        from: FROM_ADDRESS
+      };
+      if (message.cc) { options.cc = message.cc; }
+      if (message.replyTo) { options.replyTo = message.replyTo; }
+
+      GmailApp.sendEmail(message.to, message.subject, message.body, options);
+      return true;
+    } catch (error) {
+      console.warn('Alias ' + FROM_ADDRESS + ' refusé : ' + (error && error.message));
+    }
+  }
+
+  MailApp.sendEmail(message);
+  return true;
+}
+
+function account_() {
+  try {
+    return Session.getEffectiveUser().getEmail() || '';
+  } catch (error) {
+    return '';
+  }
+}
 
 function parseBody_(e) {
   try {

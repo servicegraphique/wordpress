@@ -4,10 +4,13 @@ Le formulaire des pages `/lead-assurances/`, `/lead-assurances-rcs/`,
 `/lead-energies/` et `/lead-energies-rcs/` fonctionne **sans serveur, sans PHP
 et sans back-end**.
 
-Les **trois messages** exigés — notification au responsable, copie au chef de
-département, confirmation au client — partent **directement de
-`ifeminformatique@gmail.com`**, via un relais **Google Apps Script** installé
-dans cette boîte : c'est Gmail qui expédie, sans service tiers.
+Les **trois messages** exigés — notification au responsable
+(`cremy@hellolead.pro`), copie au chef de département
+(`pbenateau@hellolead.pro`), confirmation au client — sont expédiés **depuis la
+boîte `ifeminformatique@gmail.com`**, via un relais **Google Apps Script**
+installé dans cette boîte : c'est Gmail qui expédie, sans service tiers. Le
+§ 3 bis explique comment faire apparaître `pbenateau@hellolead.pro` comme
+expéditeur affiché.
 
 ```
 Visiteur ──► formulaire (2 étapes, validation, accessibilité)
@@ -19,9 +22,9 @@ Visiteur ──► formulaire (2 étapes, validation, accessibilité)
                  ▼
       Application web Apps Script (dans ifeminformatique@gmail.com)
                  │
-                 ├──► 1. Responsable   manajahelvin@gmail.com   (Répondre à = le prospect)
-                 ├──► 2. Chef          ifeminformatique@gmail.com  (objet « [Copie] … »)
-                 └──► 3. Client        le prospect              (Répondre à = ifeminformatique@gmail.com)
+                 ├──► 1. Responsable   cremy@hellolead.pro      (Répondre à = le prospect)
+                 ├──► 2. Chef          pbenateau@hellolead.pro  (objet « [Copie] … »)
+                 └──► 3. Client        le prospect              (Répondre à = pbenateau@hellolead.pro)
 
       si le relais refuse (jeton, quota) ──► repli `formsubmit`, la demande n'est pas perdue
                  │
@@ -58,12 +61,13 @@ part sur le réseau, tout reste dans le navigateur.
 
 | # | Message | Destinataire | Répondre à | Contenu |
 |---|---|---|---|---|
-| 1 | Notification | `manajahelvin@gmail.com` | le prospect | coordonnées, volume, besoins, formulaire, page d'origine, UTM, date, référence, encart « Action attendue » |
-| 2 | Copie au chef | `ifeminformatique@gmail.com` | le prospect | même message que la notification, objet préfixé `[Copie]` |
-| 3 | Confirmation | le prospect | `ifeminformatique@gmail.com` | « une équipe s'en charge », récapitulatif (sans métadonnées internes), lien politique de confidentialité |
+| 1 | Notification | `cremy@hellolead.pro` | le prospect | coordonnées, volume, besoins, formulaire, page d'origine, UTM, date, référence, encart « Action attendue » |
+| 2 | Copie au chef | `pbenateau@hellolead.pro` | le prospect | même message que la notification, objet préfixé `[Copie]` |
+| 3 | Confirmation | le prospect | `pbenateau@hellolead.pro` | « une équipe s'en charge », récapitulatif (sans métadonnées internes), lien politique de confidentialité |
 
-Les trois partent **de** `ifeminformatique@gmail.com` : le prospect qui répond à
-sa confirmation écrit donc au chef de département, pas à une adresse technique.
+Les trois sont expédiés par la boîte `ifeminformatique@gmail.com` ; le prospect
+qui répond à sa confirmation écrit au chef de département
+(`pbenateau@hellolead.pro`), pas à l'adresse technique du relais.
 
 Les gabarits HTML + texte sont produits par `buildEmails()` dans le script du
 formulaire ; la boîte de réception locale en affiche le rendu exact.
@@ -103,8 +107,25 @@ Procédure détaillée et dépannage : **`production-gas/README.md`**. Résumé 
    },
    ```
 
-6. Envoyer une demande test : trois e-mails arrivent, tous expédiés par
-   `ifeminformatique@gmail.com`.
+6. Envoyer une demande test : trois e-mails arrivent (responsable, chef,
+   prospect), expédiés par la boîte qui héberge le script.
+
+### 3 bis. Expéditeur affiché
+
+Par défaut, l'expéditeur est **`ifeminformatique@gmail.com`** : c'est la boîte
+qui héberge le relais, donc celle que Gmail authentifie (SPF/DKIM corrects sans
+aucun réglage DNS). Les destinataires, eux, sont bien `cremy@hellolead.pro` et
+`pbenateau@hellolead.pro`.
+
+Pour afficher **`pbenateau@hellolead.pro`** à la place, deux possibilités :
+
+| Méthode | Ce qu'il faut faire | Remarque |
+|---|---|---|
+| **Alias Gmail** (le plus simple) | Gmail → Paramètres → **Comptes** → « Envoyer des e-mails en tant que » → ajouter `pbenateau@hellolead.pro` (vérification par code, ou SMTP de `hellolead.pro`), puis dans `Code.gs` : `var FROM_ADDRESS = 'pbenateau@hellolead.pro';` et **redéployer une nouvelle version** | Le relais continue de tourner dans la boîte actuelle. Si l'alias est refusé, le script se rabat seul sur la boîte : rien n'est perdu |
+| **Déplacer le relais** | Recréer le projet Apps Script **depuis `pbenateau@hellolead.pro`** (si c'est un compte Google), recoller `Code.gs`, déployer, puis reporter la nouvelle `url` et un nouveau `token` dans les 4 pages | Aucune dépendance à l'alias ; à préférer si `hellolead.pro` est un Google Workspace |
+
+`FROM_ADDRESS` reste vide par défaut : tant qu'il l'est, le comportement est
+celui qui a été validé.
 
 ### Quotas et garde-fous
 
@@ -134,7 +155,7 @@ window.HL_LEAD_CONFIG = {
   provider: 'gas',
   senderName: 'HelloLead',
   ccChef: false,                                // copie du chef sur le message au responsable
-  contactEmail: 'ifeminformatique@gmail.com',   // affiché au prospect / Reply-To
+  contactEmail: 'pbenateau@hellolead.pro',      // affiché au prospect / Reply-To
   siteUrl: 'https://www.hellodevis.fr',
   inboxUrl: '/boite-de-reception.html',
   endpoint: '',
@@ -143,14 +164,14 @@ window.HL_LEAD_CONFIG = {
 
   emailjs: { publicKey: '', serviceId: '', templateId: '' },   // alternative
   fallbackProvider: 'formsubmit',
-  formsubmit: { alias: '', email: 'manajahelvin@gmail.com' },
+  formsubmit: { alias: '', email: 'cremy@hellolead.pro' },
   web3forms: { accessKey: '' },
 
   form: {
     key: 'lead-assurances',
     label: 'Assurances pro',
-    responsable: ['manajahelvin@gmail.com'],   // message 1
-    chef: ['ifeminformatique@gmail.com']       // message 2
+    responsable: ['cremy@hellolead.pro'],       // message 1
+    chef: ['pbenateau@hellolead.pro']           // message 2
   }
 };
 ```
@@ -301,9 +322,8 @@ mais **cette page ne doit pas être publiée** sur le site en production.
 `production-php/lead-form-mail.php` + `lead-form-config.php` envoient réellement
 les deux e-mails internes (fonction `mail()`, SMTP, `wp_mail()` ou `log`), avec
 journalisation JSONL, purge RGPD (`--purge=180`) et diagnostic (`--doctor`).
-L'expéditeur y est déjà `ifeminformatique@gmail.com` ; pour passer par Gmail en
-SMTP, utiliser `smtp.gmail.com:587` et un **mot de passe d'application** Google
-(compte → Sécurité → Validation en deux étapes).
+L'expéditeur y est déjà `pbenateau@hellolead.pro` ; renseigner le transport
+SMTP de la boîte et vérifier SPF/DKIM du domaine avant d'activer.
 
 Activation : copier les deux fichiers à la racine du site (PHP 7.4+), vérifier
 les adresses, `enabled => true`, puis dans la page `provider: 'endpoint'` et
@@ -317,15 +337,17 @@ remplace.
 ## 10. Mise en production — liste de contrôle
 
 - [x] `provider: 'gas'`, `fallbackProvider: 'formsubmit'` dans les 4 pages.
-- [x] `responsable` = manajahelvin@gmail.com, `chef` = ifeminformatique@gmail.com,
-      `contactEmail` = ifeminformatique@gmail.com.
+- [x] `responsable` = cremy@hellolead.pro, `chef` = pbenateau@hellolead.pro,
+      `contactEmail` = pbenateau@hellolead.pro.
 - [x] Projet Apps Script créé **depuis `ifeminformatique@gmail.com`**.
 - [x] `TOKEN` remplacé par un jeton long et aléatoire.
 - [x] Application web déployée (*moi* / *Tout le monde*), URL `/exec` publiée.
 - [x] `gas.url` et `gas.token` renseignés **dans les 4 pages** (dépôt).
 - [ ] Pages **importées dans WordPress** avec ces deux valeurs (mêmes lignes).
-- [ ] Une demande test produit bien **3 e-mails**, tous expédiés par
-      `ifeminformatique@gmail.com`, et « Répondre » écrit au prospect.
+- [ ] Une demande test produit bien **3 e-mails** vers cremy@hellolead.pro,
+      pbenateau@hellolead.pro et le prospect, et « Répondre » écrit au prospect.
+- [ ] `FROM_ADDRESS` laissé vide, ou renseigné avec un alias Gmail vérifié
+      (§ 3 bis) — redéployer une nouvelle version dans ce second cas.
 - [ ] Repli FormSubmit activé une fois (lien d'activation reçu par e-mail).
 - [ ] `boite-de-reception.html` **non publiée**.
 - [ ] Politique de confidentialité à jour (Gmail/Google, finalité, durée).

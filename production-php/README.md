@@ -3,9 +3,9 @@
 Ce dossier n'est **pas utilisé** par le formulaire : les 4 pages fonctionnent
 en JavaScript pur (`provider: 'gas'`, relais Gmail Apps Script ; repli `formsubmit`), sans serveur.
 
-Les adresses y sont déjà renseignées : `ifeminformatique@gmail.com` (expéditeur
-des trois e-mails et adresse de réponse de la confirmation) et
-`manajahelvin@gmail.com` (responsable destinataire).
+Les adresses y sont déjà renseignées : `cremy@hellolead.pro` (responsable
+destinataire) et `pbenateau@hellolead.pro` (chef de département en copie, et
+adresse de réponse de la confirmation).
 
 Il est conservé uniquement pour le cas où un envoi transactionnel côté serveur
 deviendrait nécessaire (fonction `mail()`, SMTP, `wp_mail()`, journalisation,

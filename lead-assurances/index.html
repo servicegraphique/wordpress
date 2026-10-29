@@ -1172,6 +1172,12 @@ a.no-theme-style {
 					    token: '73d23c8f9d60495e9b7c071e65787bbb76be1cec2c1b47b783875424e6bf31aa'
 					  },
 
+					  // Feuille de suivi — relais séparé, lié au tableur (production-sheet/) :
+					  //   url   : « Application web » du script de la feuille, terminée par /exec
+					  //   token : même valeur que la constante TOKEN de ce script
+					  // Vide = aucune ligne ajoutée ; les e-mails partent normalement.
+					  sheet: { url: '', token: '' },
+
 					  // EmailJS — solution équivalente si un service tiers est préféré
 					  // (gratuit, 200 envois/mois) : dashboard.emailjs.com
 					  emailjs: { publicKey: '', serviceId: '', templateId: '' },
@@ -1828,6 +1834,64 @@ a.no-theme-style {
 				     la boîte elle-même (production-gas/Code.gs). Le corps part en
 				     « text/plain » : c'est le seul type simple pour CORS, Apps Script ne
 				     sait pas répondre à une requête de pré-vérification. */
+				  /* ------------------------------------------------------------------
+				     Feuille de suivi Google (relais séparé — production-sheet/)
+
+				     Chaque demande valide ajoute une ligne dans la feuille du bureau.
+				     Cet envoi est totalement indépendant de celui des e-mails : s'il
+				     échoue, le visiteur n'en sait rien et les trois messages partent
+				     quand même. L'inverse est vrai aussi.
+				     ------------------------------------------------------------------ */
+
+				  /** Fiche transmise à la feuille (mêmes champs que les e-mails). */
+				  function sheetLead_(data) {
+				    return {
+				      formulaire: FORM_CFG.label || data.formulaire,
+				      nom: data.nom,
+				      email: data.email,
+				      telephone: data.telephone,
+				      code_postal: data.code_postal,
+				      societe: data.societe,
+				      volume: data.volume,
+				      besoins: data.besoins,
+				      page: data.page,
+				      utm: data.utm,
+				      lead_id: data.lead_id
+				    };
+				  }
+
+				  /**
+				   * Ajoute la demande à la feuille. Ne rejette jamais : toute erreur est
+				   * convertie en résultat, puis remontée à GTM pour le suivi.
+				   */
+				  function pushSheet(data) {
+				    var cfg = CONFIG.sheet || {};
+
+				    // Mode démonstration : rien ne sort du navigateur.
+				    if (PROVIDER === 'local' || !cfg.url || !cfg.token) {
+				      return Promise.resolve({ ok: false, reason: 'not_configured' });
+				    }
+
+				    return postRaw(cfg.url, { token: cfg.token, lead: sheetLead_(data) }, 'text/plain;charset=utf-8')
+				      .then(function (res) {
+				        var out = {};
+				        try { out = JSON.parse(String((res && res.text) || '')) || {}; } catch (error) { out = {}; }
+
+				        return {
+				          ok: res.status === 200 && out.ok === true,
+				          duplicate: !!out.duplicate,
+				          row: out.row || 0,
+				          reason: res.status === 200 ? String(out.error || '') : 'http_' + res.status
+				        };
+				      })
+				      .catch(function () {
+				        return { ok: false, reason: 'network' };
+				      })
+				      .then(function (result) {
+				        return result;
+				      });
+				  }
+
 				  function sendGas(data) {
 				    var cfg = CONFIG.gas || {};
 				    if (!cfg.url || !cfg.token) {
@@ -2616,6 +2680,17 @@ a.no-theme-style {
 
 					      hideAlert();
 					      setSending(true);
+
+					      // Copie dans la feuille de suivi, en parallèle : jamais bloquant.
+					      // (le suivi GTM passe par `track`, disponible dans cette portée)
+					      pushSheet(data).then(function (sheet) {
+					        track('hl_lead_form_sheet', {
+					          ok: sheet.ok,
+					          reason: sheet.reason || '',
+					          duplicate: !!sheet.duplicate,
+					          row: sheet.row || 0
+					        });
+					      });
 
 					      deliver(data).then(function (result) {
 					        var payload = result.payload || {};

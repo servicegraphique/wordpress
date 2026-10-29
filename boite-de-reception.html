@@ -325,7 +325,7 @@
   </div>
 
   <h1>Demandes reçues</h1>
-  <p class="lede">Chaque demande contient la notification destinée au responsable (avec le chef de département en copie) et la confirmation envoyée au prospect.</p>
+  <p class="lede">Chaque demande contient la notification destinée au responsable, la copie au chef de département et la confirmation envoyée au prospect.</p>
 
   <div class="leads" data-leads></div>
   <div class="empty" data-empty hidden>
@@ -547,9 +547,9 @@
 
     foot.appendChild(toggle);
 
-    // Sans back-end, la confirmation au prospect ne peut pas partir toute
-    // seule : on la prépare en un clic dans la messagerie du poste.
-    if (emails.client && data.email) {
+    // Quand la confirmation est déjà partie automatiquement, inutile de la
+    // reproposer ; sinon on la prépare en un clic dans la messagerie du poste.
+    if (emails.client && data.email && !lead.clientSent) {
       var confirmation = element('a', 'btn', 'Envoyer la confirmation au client');
       confirmation.href = 'mailto:' + encodeURIComponent(data.email)
         + '?subject=' + encodeURIComponent(emails.client.subject || 'Votre demande a bien été reçue')
@@ -571,7 +571,12 @@
       built = true;
       panel.appendChild(element('p', 'emails__title', 'E-mails générés par cette demande'));
       if (emails.internal) {
-        panel.appendChild(mailBlock('Responsable (chef de département en copie)', emails.internal));
+        // En mode EmailJS, le chef reçoit un message distinct intitulé
+        // « [Copie] » ; en mode relais, il est simplement en copie.
+        var internalLabel = lead.provider === 'emailjs'
+          ? 'Responsable — le chef de département reçoit la même, intitulée « [Copie] »'
+          : 'Responsable (chef de département en copie)';
+        panel.appendChild(mailBlock(internalLabel, emails.internal));
       }
       if (emails.client) {
         panel.appendChild(mailBlock('Confirmation au prospect', emails.client));
@@ -641,7 +646,12 @@
       strong.textContent = 'Mode local. ';
       text = 'Les demandes sont enregistrées dans ce navigateur et aucun e-mail n’est envoyé : '
         + 'les deux messages ci-dessous sont ceux qui partiraient en production, générés à l’identique. '
-        + 'Passez provider à « formsubmit » dans la page pour un envoi réel.';
+        + 'Passez provider à « emailjs » (ou « formsubmit ») dans la page pour un envoi réel.';
+    } else if (provider === 'emailjs') {
+      strong.textContent = 'Envoi automatique actif. ';
+      text = 'Les trois messages partent réellement depuis ifeminformatique@gmail.com : '
+        + 'la notification au responsable, l’e-mail dédié au chef de département et la confirmation au client. '
+        + 'Ce journal en garde une copie.';
     } else if (provider === 'formsubmit' || provider === 'web3forms') {
       strong.textContent = 'Relais d’e-mail actif. ';
       text = 'Les demandes partent réellement vers le responsable, avec le chef de département en copie. '

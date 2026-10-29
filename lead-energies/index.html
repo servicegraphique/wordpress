@@ -486,8 +486,10 @@ a.no-theme-style {
 	     Étape 1 : volume de leads / mois · Étape 2 : coordonnées, besoins et volume souhaité.
 	     Aucun back-end : la configuration se règle dans window.HL_LEAD_CONFIG, en tête du
 	     script en bas de ce widget (provider, adresses responsable et chef de département).
-	     provider 'formsubmit' (actif) : la demande part réellement au responsable, le chef de
-	     département est en copie, sans serveur. provider 'local' : rien ne part et les
+	     provider 'emailjs' (actif) : les trois e-mails (responsable, chef de département,
+	     confirmation au client) partent de la même boîte dédiée, sans serveur.
+	     provider 'local' : rien ne part et les demandes restent consultables dans
+	     /boite-de-reception.html.
 	     demandes restent consultables dans /boite-de-reception.html. -->
 					<style>
 					/* =====================================================================
@@ -1014,7 +1016,7 @@ a.no-theme-style {
 					.hl-lead-form .hl-lf-demo a:hover,
 					.hl-lead-form .hl-lf-success__email a:hover { color: var(--hl-red-dark); }
 					</style>
-					<div class="hl-lead-form" data-hl-form="lead-energies" data-fallback-email="manajahelvin@gmail.com">
+					<div class="hl-lead-form" data-hl-form="lead-energies" data-fallback-email="ifeminformatique@gmail.com">
 						<div class="hl-lf-card">
 							<div class="hl-lf-head">
 								<h2 class="hl-lf-title">Parlons de votre projet</h2>
@@ -1142,32 +1144,43 @@ a.no-theme-style {
 					/* ----------------------------------------------------------------------
 					   Configuration de l'envoi — le seul endroit à modifier.
 					   provider : 'local'      → enregistre dans ce navigateur (aucun serveur)
+					              'emailjs'    → envoi réel depuis la boîte dédiée (clés EmailJS, repli FormSubmit)
 					              'formsubmit' → relais d'e-mail sans back-end (voir formsubmit.email)
 					              'web3forms'  → relais d'e-mail sans back-end (voir web3forms.accessKey)
 					              'endpoint'   → POST JSON vers endpoint (PHP, serverless, API)
 					   ---------------------------------------------------------------------- */
 					window.HL_LEAD_CONFIG = {
-					  // 'formsubmit' : envoi réel par relais d'e-mail, sans back-end.
-					  // 'local'      : rien ne part, tout reste dans ce navigateur (recette).
-					  provider: 'formsubmit',
+					  // Les trois e-mails (responsable, chef de département, client) partent de
+					  // la même boîte : ifeminformatique@gmail.com, reliée au service EmailJS.
+					  provider: 'emailjs',
+					  senderName: 'HelloLead',
 
 					  // Adresse affichée au prospect pour répondre (Reply-To de la confirmation).
-					  contactEmail: 'manajahelvin@gmail.com',
+					  contactEmail: 'ifeminformatique@gmail.com',
 					  siteUrl: 'https://www.hellodevis.fr',
 					  inboxUrl: '/boite-de-reception.html',
 
 					  endpoint: '',
 
-					  // FormSubmit : 'alias' est la chaîne fournie après activation (recommandé,
-					  // elle évite d'afficher l'adresse en clair). Laisser vide = email ci-dessous.
+					  // EmailJS (gratuit) — dashboard.emailjs.com
+					  //   publicKey  : Account → General  → Public Key
+					  //   serviceId  : Email Services     → identifiant du compte Gmail relié
+					  //   templateId : Email Templates    → gabarit unique (voir FORMULAIRE-LEAD.md)
+					  // ccChef : true pour mettre aussi le chef en copie du message au responsable.
+					  emailjs: { publicKey: '', serviceId: '', templateId: '', ccChef: false },
+
+					  // Tant que les clés EmailJS sont vides, les demandes partent par FormSubmit :
+					  // aucune perte, et bascule automatique dès qu'elles sont renseignées.
+					  fallbackProvider: 'formsubmit',
 					  formsubmit: { alias: '', email: 'manajahelvin@gmail.com' },
+
 					  web3forms: { accessKey: '' },
 
 					  form: {
 					    key: 'lead-energies',
 					    label: 'Énergies pro',
 					    responsable: ['manajahelvin@gmail.com'],   // destinataire principal (À)
-					    chef: ['ifeminformatique@gmail.com']                  // chef de département (Copie)
+					    chef: ['ifeminformatique@gmail.com']                  // chef de département, e-mail dédié
 					  }
 					};
 
@@ -1176,8 +1189,10 @@ a.no-theme-style {
 					   - Étape 1 : volume de leads souhaité (select accessible)
 					   - Étape 2 : nom, e-mail, téléphone, code postal, société, besoins, volume
 					   - Envoi : fournisseur configurable (window.HL_LEAD_CONFIG)
-					       formsubmit → relais d'e-mail sans back-end : la demande part vraiment
-					                    vers le responsable (chef de département en copie) ;
+					       emailjs    → envoi réel depuis une boîte Gmail reliée au service :
+					                    les trois e-mails (responsable, chef de département,
+					                    confirmation au client) partent de la même adresse ;
+					       formsubmit → relais d'e-mail sans back-end (une seule adresse expéditrice) ;
 					       local      → rien ne part, la demande est enregistrée dans le
 					                    navigateur et consultable dans /boite-de-reception.html ;
 					       web3forms  → relais d'e-mail sans back-end (access key) ;
@@ -1645,12 +1660,14 @@ a.no-theme-style {
 					  /* ------------------------------------------------------------------
 					     Fournisseurs d'envoi
 					     local       : enregistre dans le navigateur (aucun réseau)
+					     emailjs     : envoi réel (3 e-mails) depuis une boîte reliée à EmailJS
 					     formsubmit  : relais d'e-mail sans serveur (clé = adresse destinataire)
 					     web3forms   : relais d'e-mail sans serveur (clé = access key)
 					     endpoint    : POST JSON vers une URL (PHP, serverless, API interne)
 					     ------------------------------------------------------------------ */
 
-					  function keepLead(data, provider) {
+					  function keepLead(data, provider, extra) {
+					    var info = extra || {};
 					    try {
 					      return storeLead({
 					        id: data.lead_id || ('hl-' + Date.now().toString(36)),
@@ -1659,6 +1676,7 @@ a.no-theme-style {
 					        label: FORM_CFG.label || data.formulaire,
 					        page: data.page,
 					        provider: provider,
+					        clientSent: !!info.clientSent,
 					        data: data,
 					        emails: buildEmails(data)
 					      });
@@ -1677,6 +1695,124 @@ a.no-theme-style {
 					          payload: { ok: true, mode: 'local', stored: !!result.saved, duplicate: !!result.duplicate }
 					        });
 					      }, delay);
+					    });
+					  }
+
+					  /* ------------------------------------------------------------------
+					     EmailJS : envoi réel depuis une boîte Gmail reliée au service.
+					     Un seul gabarit, appelé trois fois (responsable, chef, client).
+					     ------------------------------------------------------------------ */
+
+					  var EMAILJS_URL = 'https://api.emailjs.com/api/v1.0/email/send';
+
+					  function emailjsParams(data, mail, to, cc, replyTo) {
+					    return {
+					      to_email: to.join(','),
+					      cc: cc.join(','),
+					      bcc: '',
+					      reply_to: replyTo || '',
+					      subject: mail.subject,
+					      message: mail.html,
+					      message_text: mail.text,
+					      from_name: CONFIG.senderName || 'HelloLead',
+
+					      // Champs bruts : utiles pour un gabarit simple ({{societe}}, …).
+					      formulaire: FORM_CFG.label || data.formulaire,
+					      nom: data.nom,
+					      email: data.email,
+					      telephone: data.telephone,
+					      code_postal: data.code_postal,
+					      societe: data.societe,
+					      volume: data.volume,
+					      besoins: (data.besoins || []).join(' · '),
+					      page: data.page,
+					      lead_id: data.lead_id
+					    };
+					  }
+
+					  function sendEmailJS(data) {
+					    var cfg = CONFIG.emailjs || {};
+					    if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) {
+					      return Promise.reject({ status: 503, payload: { code: 'not_configured' } });
+					    }
+
+					    var mails = buildEmails(data);
+					    var responsable = listOf(FORM_CFG.responsable);
+					    var chef = listOf(FORM_CFG.chef);
+					    var withChefCopy = cfg.ccChef === true;
+
+					    function push(label, to, cc, replyTo, subject, html, text) {
+					      if (!to.length) {
+					        return Promise.resolve({ label: label, ok: true, skipped: true });
+					      }
+
+					      var payload = {
+					        service_id: cfg.serviceId,
+					        template_id: cfg.templateId,
+					        user_id: cfg.publicKey,
+					        template_params: emailjsParams(data, {
+					          subject: subject,
+					          html: html,
+					          text: text
+					        }, to, cc, replyTo)
+					      };
+
+					      return postRaw(EMAILJS_URL, payload).then(function (res) {
+					        return {
+					          label: label,
+					          ok: res.status === 200,
+					          status: res.status,
+					          message: String(res.text || '').trim()
+					        };
+					      });
+					    }
+
+					    // 1. Responsable — le chef n'est en copie que si demandé (sinon doublon
+					    //    avec le message dédié ci-dessous).
+					    var jobs = [
+					      push('responsable', responsable, withChefCopy ? chef : [], data.email,
+					        mails.internal.subject, mails.internal.html, mails.internal.text),
+					      push('chef', chef, [], data.email,
+					        '[Copie] ' + mails.internal.subject, mails.internal.html, mails.internal.text),
+					      push('client', [data.email], [], CONTACT_EMAIL,
+					        mails.client.subject, mails.client.html, mails.client.text)
+					    ];
+
+					    return Promise.all(jobs).then(function (results) {
+					      var sent = { responsable: false, chef: false, client: false };
+					      var failure = null;
+
+					      results.forEach(function (item) {
+					        sent[item.label] = !!item.ok;
+					        if (!item.ok && !failure) { failure = item; }
+					      });
+
+					      // Sans la notification au responsable, le lead serait perdu : échec.
+					      if (!sent.responsable) {
+					        return {
+					          status: failure && failure.status ? failure.status : 500,
+					          payload: {
+					            ok: false,
+					            code: 'relay',
+					            relayKind: failure && failure.status === 402 ? 'quota'
+					              : failure && failure.status === 429 ? 'quota'
+					              : failure && (failure.status === 400 || failure.status === 401 || failure.status === 403) ? 'config'
+					              : 'unknown',
+					            message: failure ? failure.message : '',
+					            sent: sent
+					          }
+					        };
+					      }
+
+					      return {
+					        status: 200,
+					        payload: {
+					          ok: true,
+					          mode: 'emailjs',
+					          sent: sent,
+					          partial: !sent.chef || !sent.client
+					        }
+					      };
 					    });
 					  }
 
@@ -1713,7 +1849,7 @@ a.no-theme-style {
 					    var endpoint = 'https://formsubmit.co/ajax/' + encodeURIComponent(target).replace(/%40/g, '@');
 
 					    return postJson(endpoint, body)
-					      .then(function (result) { return normalizeRelay(result, data); });
+					      .then(function (result) { return normalizeRelay(result, data, 'formsubmit'); });
 					  }
 
 					  function sendWeb3Forms(data) {
@@ -1736,31 +1872,31 @@ a.no-theme-style {
 					      besoins: (data.besoins || []).join(', '),
 					      page: data.page,
 					      lead_id: data.lead_id
-					    }).then(function (result) { return normalizeRelay(result, data); });
+					    }).then(function (result) { return normalizeRelay(result, data, 'web3forms'); });
 					  }
 
 					  /* Les relais répondent 200 avec { success: "false", message: "..." } quand
 					     ils refusent (activation manquante, quota, adresse invalide). On ramène
 					     ça au même contrat que les autres fournisseurs. */
-					  function normalizeRelay(result, data) {
+					  function normalizeRelay(result, data, provider) {
 					    var payload = (result && result.payload) || {};
 					    var ok = payload.success;
 
 					    if (ok === 'true' || ok === true) {
-					      return { status: 200, payload: { ok: true, mode: PROVIDER } };
+					      return { status: 200, payload: { ok: true, mode: provider } };
 					    }
 
 					    if (ok === 'false' || ok === false) {
 					      return {
 					        status: 0,
-					        payload: { ok: false, code: 'relay', mode: PROVIDER, message: String(payload.message || '') },
+					        payload: { ok: false, code: 'relay', mode: provider, message: String(payload.message || '') },
 					        reason: 'relay'
 					      };
 					    }
 
 					    // Réponse inattendue : on considère l'envoi comme non confirmé.
 					    if (result && result.status >= 200 && result.status < 300) {
-					      return { status: 200, payload: { ok: true, mode: PROVIDER, unconfirmed: true } };
+					      return { status: 200, payload: { ok: true, mode: provider, unconfirmed: true } };
 					    }
 
 					    return result;
@@ -1775,31 +1911,121 @@ a.no-theme-style {
 					    return postJson(url, data);
 					  }
 
-					  function deliver(data) {
-					    if (PROVIDER === 'local') { return sendLocal(data); }
-
-					    var promise;
-					    if (PROVIDER === 'formsubmit') { promise = sendFormSubmit(data); }
-					    else if (PROVIDER === 'web3forms') { promise = sendWeb3Forms(data); }
-					    else { promise = sendEndpoint(data); }
-
-					    return promise.then(function (result) {
-					      // Même en mode distant, une copie locale est conservée : si le relais
-					      // perd le message, la demande reste consultable et exportable.
-					      if (result && result.status >= 200 && result.status < 300) {
-					        var kept = keepLead(data, PROVIDER);
-					        result.payload = result.payload || {};
-					        result.payload.mode = result.payload.mode || PROVIDER;
-					        result.payload.stored = !!kept.saved;
-					        result.payload.duplicate = !!kept.duplicate;
-					      }
-					      return result;
-					    });
+					  function dispatch(provider, data) {
+					    if (provider === 'emailjs') { return sendEmailJS(data); }
+					    if (provider === 'formsubmit') { return sendFormSubmit(data); }
+					    if (provider === 'web3forms') { return sendWeb3Forms(data); }
+					    if (provider === 'endpoint') { return sendEndpoint(data); }
+					    return sendLocal(data);
 					  }
+
+				  function deliver(data) {
+				    if (PROVIDER === 'local') { return sendLocal(data); }
+
+				    var fallback = CONFIG.fallbackProvider;
+
+				    // Un fournisseur inutilisable — clés absentes, clés refusées
+				    // (400/401/403) ou quota épuisé (402/429) — n'a envoyé aucun
+				    // message : basculer sur le repli ne peut pas créer de doublon.
+				    // En revanche, une panne réseau ou une erreur 5xx laisse planer le
+				    // doute (le message est peut-être parti) : on ne rejoue rien.
+				    function recoverable(payload) {
+				      if (!payload) { return false; }
+				      var code = payload.code || '';
+				      var kind = payload.relayKind || '';
+				      return code === 'not_configured'
+				        || (code === 'relay' && (kind === 'quota' || kind === 'config'));
+				    }
+
+				    function useFallback() {
+				      if (!fallback || fallback === PROVIDER || fallback === 'local') { return null; }
+				      return dispatch(fallback, data).then(function (result) {
+				        result.payload = result.payload || {};
+				        result.payload.requested = PROVIDER;
+				        result.payload.fallback = fallback;
+				        return result;
+				      });
+				    }
+
+				    // Les relais rendent un refus sous forme de résultat (HTTP 200 ou
+				    // 4xx), pas sous forme de rejet : les deux chemins sont traités ici.
+				    function settle(result) {
+				      var payload = result && result.payload;
+				      var failed = !result || result.status < 200 || result.status >= 300
+				        || (payload && payload.ok === false);
+				      if (!failed || !recoverable(payload)) { return result; }
+				      return useFallback() || result;
+				    }
+
+				    return dispatch(PROVIDER, data).then(settle, function (error) {
+				      var retry = recoverable(error && error.payload) ? useFallback() : null;
+				      return retry || Promise.reject(error || { status: 0, payload: null });
+				    }).then(function (result) {
+				      // Même en mode distant, une copie locale est conservée : si le relais
+				      // perd le message, la demande reste consultable et exportable.
+				      if (result && result.status >= 200 && result.status < 300) {
+				        var payload = result.payload || {};
+				        var kept = keepLead(data, payload.mode || PROVIDER, {
+				          clientSent: !!(payload.sent && payload.sent.client) || payload.mode === 'endpoint'
+				        });
+
+				        payload.mode = payload.mode || PROVIDER;
+				        payload.stored = !!kept.saved;
+				        payload.duplicate = !!kept.duplicate;
+				      }
+
+				      return result;
+				    });
+				  }
 
 					  /* ------------------------------------------------------------------
 					     Requête réseau
 					     ------------------------------------------------------------------ */
+
+					  /**
+					   * POST JSON qui renvoie le corps brut.
+					   * EmailJS répond « OK » en texto sur succès : postJson (qui parse du JSON)
+					   * ne suffit pas pour juger du résultat.
+					   */
+					  function postRaw(url, payload) {
+					    return new Promise(function (resolve, reject) {
+					      var timeout = window.setTimeout(function () {
+					        reject({ status: 0, payload: null, reason: 'timeout' });
+					      }, 20000);
+
+					      if (typeof window.fetch === 'function') {
+					        window.fetch(url, {
+					          method: 'POST',
+					          headers: { 'Content-Type': 'application/json' },
+					          body: JSON.stringify(payload)
+					        }).then(function (response) {
+					          return response.text().then(function (text) {
+					            window.clearTimeout(timeout);
+					            resolve({ status: response.status, text: text });
+					          });
+					        }).catch(function () {
+					          window.clearTimeout(timeout);
+					          reject({ status: 0, payload: null, reason: 'network' });
+					        });
+					        return;
+					      }
+
+					      var xhr = new XMLHttpRequest();
+					      xhr.open('POST', url, true);
+					      xhr.setRequestHeader('Content-Type', 'application/json');
+					      xhr.timeout = 20000;
+					      xhr.onload = function () {
+					        window.clearTimeout(timeout);
+					        resolve({ status: xhr.status, text: xhr.responseText });
+					      };
+					      xhr.onerror = function () {
+					        window.clearTimeout(timeout);
+					        reject({ status: 0, payload: null, reason: 'network' });
+					      };
+					      xhr.ontimeout = xhr.onerror;
+					      xhr.send(JSON.stringify(payload));
+					    });
+					  }
 
 					  function postJson(url, payload) {
 					    return new Promise(function (resolve, reject) {
@@ -2151,8 +2377,8 @@ a.no-theme-style {
 					            successEmail.appendChild(inboxLink);
 					          }
 					          successEmail.hidden = false;
-					        } else if (mode === 'endpoint' && data.email) {
-					          // Le relais serveur envoie réellement la confirmation au prospect.
+					        } else if (meta.clientSent && data.email) {
+					          // La confirmation est réellement partie (EmailJS ou relais serveur).
 					          successEmail.textContent = 'Une confirmation vient d’être envoyée à ' + data.email + '.';
 					          successEmail.hidden = false;
 					        } else if (mode !== 'spam') {
@@ -2188,7 +2414,7 @@ a.no-theme-style {
 					        return;
 					      }
 
-					      if (status === 429) {
+					      if (status === 429 && payload.code !== 'relay') {
 					        showAlert(payload.message || 'Trop de demandes envoyées récemment. Merci de réessayer dans quelques minutes.');
 					        track('hl_lead_form_error', { reason: 'rate_limited' });
 					        return;
@@ -2206,6 +2432,26 @@ a.no-theme-style {
 					          fallbackEmail ? { email: fallbackEmail } : undefined
 					        );
 					        track('hl_lead_form_error', { reason: 'not_configured' });
+					        return;
+					      }
+
+					      // Clés EmailJS absentes ou erronées : le service n'est pas encore prêt.
+					      if (payload.code === 'relay' && payload.relayKind === 'config') {
+					        showAlert(
+					          'Le service d’envoi n’est pas encore configuré. Merci de nous écrire directement à',
+					          fallbackEmail ? { email: fallbackEmail } : undefined
+					        );
+					        track('hl_lead_form_error', { reason: 'emailjs_config' });
+					        return;
+					      }
+
+					      // Quota mensuel atteint chez le fournisseur.
+					      if (payload.code === 'relay' && payload.relayKind === 'quota') {
+					        showAlert(
+					          'Trop de demandes envoyées ce mois-ci. Merci de nous écrire directement à',
+					          fallbackEmail ? { email: fallbackEmail } : undefined
+					        );
+					        track('hl_lead_form_error', { reason: 'relay_quota' });
 					        return;
 					      }
 
@@ -2275,13 +2521,19 @@ a.no-theme-style {
 
 					        if (result.status >= 200 && result.status < 300 && payload.ok !== false) {
 					          setSending(false);
-					          showSuccess(data, { mode: payload.mode || 'remote', stored: payload.stored });
+					          showSuccess(data, {
+					            mode: payload.mode || 'remote',
+					            stored: payload.stored,
+					            clientSent: !!(payload.sent && payload.sent.client)
+					          });
 					          track('hl_lead_form_submit', {
-					            provider: PROVIDER,
+					            provider: payload.mode || PROVIDER,
 					            volume: data.volume,
 					            besoins: data.besoins,
 					            lead_id: data.lead_id,
-					            duplicate: !!payload.duplicate
+					            duplicate: !!payload.duplicate,
+					            partial: !!payload.partial,
+					            fallback: payload.fallback || ''
 					          });
 					          return;
 					        }

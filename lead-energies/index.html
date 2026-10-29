@@ -482,15 +482,15 @@ a.no-theme-style {
 		<div class="elementor-element elementor-element-440e6e91 e-con-full e-flex e-con e-child" data-id="440e6e91" data-element_type="container">
 				<div class="elementor-element elementor-element-38a20b6b elementor-widget elementor-widget-html" data-id="38a20b6b" data-element_type="widget" data-widget_type="html.default">
 				<div class="elementor-widget-container">
-										<!-- Formulaire de lead HelloLead – 2 étapes (remplace le widget Calendly inline).
-					     Étape 1 : volume de leads / mois · Étape 2 : coordonnées + besoins + volume + CTA Calendly.
+										<!-- Formulaire de lead HelloLead – 2 étapes.
+					     Étape 1 : volume de leads / mois · Étape 2 : nom, coordonnées, besoins et volume souhaité.
 					     Configuration : attribut data-endpoint sur .hl-lead-form (URL recevant un POST JSON du lead).
 					     Sans endpoint, le lead est uniquement poussé dans dataLayer (event "hl_lead_form_submit")
 					     et diffusé via l'événement DOM "hl:lead-form:submit". -->
 					<style>
 					/* =====================================================================
 					   Formulaire de lead Hellodevis – 2 étapes (volume -> coordonnées)
-					   Remplace le widget Calendly sur les pages lead-*
+					   Étape 1 : volume de leads · Étape 2 : nom, coordonnées, besoins et volume
 					   ===================================================================== */
 					.hl-lead-form {
 					  --hl-red: #eb5846;
@@ -883,7 +883,7 @@ a.no-theme-style {
 					}
 
 					.hl-lead-form .hl-lf-success__text {
-					  margin: 0 0 18px;
+					  margin: 0;
 					  font-size: 14.5px;
 					  line-height: 1.5;
 					  color: #4b5563;
@@ -915,10 +915,10 @@ a.no-theme-style {
 
 					</style>
 
-					<div class="hl-lead-form" data-hl-form="lead-energies" data-calendly-url="https://calendly.com/cremy-hellolead/votre-plan-de-leads-personnalises-hellolead?hide_event_type_details=1&amp;hide_gdpr_banner=1" data-endpoint="">
+					<div class="hl-lead-form" data-hl-form="lead-energies" data-endpoint="">
 						<div class="hl-lf-card">
 							<div class="hl-lf-head">
-								<h2 class="hl-lf-title">Planifier un échange</h2>
+								<h2 class="hl-lf-title">Parlons de votre projet</h2>
 								<p class="hl-lf-subtitle">Présentez-nous vos objectifs.</p>
 								<div class="hl-lf-progress">
 									<span class="hl-lf-progress__bar" aria-hidden="true"><span class="hl-lf-progress__fill"></span></span>
@@ -947,6 +947,11 @@ a.no-theme-style {
 									<button type="button" class="hl-lf-btn" data-hl-next>Suivant</button>
 								</div>
 								<div class="hl-lf-step" data-hl-step="2" hidden>
+									<div class="hl-lf-field">
+										<label class="hl-lf-sr-only" for="hl-lf-nom-energies">Nom et prénom (obligatoire)</label>
+										<input class="hl-lf-input" id="hl-lf-nom-energies" name="nom" type="text" autocomplete="name" placeholder="Nom et Prénom*" aria-required="true">
+										<p class="hl-lf-error" role="alert" hidden>Merci d’indiquer votre nom et prénom.</p>
+									</div>
 									<div class="hl-lf-field">
 										<label class="hl-lf-sr-only" for="hl-lf-tel-energies">Téléphone (obligatoire)</label>
 										<input class="hl-lf-input" id="hl-lf-tel-energies" name="telephone" type="tel" inputmode="tel" autocomplete="tel" spellcheck="false" placeholder="Téléphone*" aria-required="true">
@@ -1007,14 +1012,13 @@ a.no-theme-style {
 										</div>
 										<p class="hl-lf-error" role="alert" hidden>Merci de sélectionner un volume de leads.</p>
 									</div>
-									<button type="submit" class="hl-lf-btn">Choisir un créneau sur Calendly</button>
+									<button type="submit" class="hl-lf-btn">Envoyer ma demande</button>
 									<button type="button" class="hl-lf-back" data-hl-back><span aria-hidden="true">←</span> Retour</button>
 								</div>
 								<div class="hl-lf-success" hidden>
 									<div class="hl-lf-success__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
 									<p class="hl-lf-success__title" role="status">Merci, votre demande est enregistrée</p>
-									<p class="hl-lf-success__text">Choisissez maintenant le créneau qui vous convient : le calendrier s’ouvre dans un nouvel onglet.</p>
-									<a class="hl-lf-btn" href="https://calendly.com/cremy-hellolead/votre-plan-de-leads-personnalises-hellolead?hide_event_type_details=1&amp;hide_gdpr_banner=1" target="_blank" rel="noopener" data-hl-calendly-link>Choisir un créneau sur Calendly</a>
+									<p class="hl-lf-success__text">Un expert HelloLead vous recontacte sous 24 h ouvrées pour construire votre plan de leads personnalisé.</p>
 								</div>
 							</form>
 						</div>
@@ -1024,7 +1028,7 @@ a.no-theme-style {
 					/* =====================================================================
 					   Formulaire de lead Hellodevis – 2 étapes
 					   - Étape 1 : volume de leads souhaité (select custom)
-					   - Étape 2 : coordonnées + besoins + volume confirmé + CTA Calendly
+					   - Étape 2 : nom, coordonnées, besoins et volume souhaité
 					   Aucune dépendance (pas de jQuery).
 					   ===================================================================== */
 					(function () {
@@ -1218,8 +1222,6 @@ a.no-theme-style {
 					    var fill = $('.hl-lf-progress__fill', root);
 					    var stepLabel = $('[data-hl-step-label]', root);
 					    var success = $('.hl-lf-success', root);
-					    var calendlyLink = $('[data-hl-calendly-link]', root);
-					    var calendlyUrl = root.getAttribute('data-calendly-url') || (calendlyLink ? calendlyLink.getAttribute('href') : '');
 					    var endpoint = root.getAttribute('data-endpoint') || '';
 					    var formName = root.getAttribute('data-hl-form') || 'lead';
 					    var current = 0;
@@ -1228,12 +1230,18 @@ a.no-theme-style {
 					    var volumeSelectEl = $('[data-hl-select]', root);
 					    var volumeApi = volumeSelectEl ? volumeSelectEl.hlSelect : null;
 
+					    var fullname = form.elements['nom'];
 					    var phone = form.elements['telephone'];
 					    var postal = form.elements['code_postal'];
 					    var company = form.elements['societe'];
 					    var volume = form.elements['volume_souhaite'];
 
 					    var rules = [
+					      {
+					        el: fullname,
+					        test: function () { return fullname.value.trim().length >= 2 && /\s/.test(fullname.value.trim()); },
+					        message: 'Merci d’indiquer votre nom et prénom.'
+					      },
 					      {
 					        el: phone,
 					        test: function () { return isValidPhone(phone.value); },
@@ -1347,6 +1355,7 @@ a.no-theme-style {
 					        page: window.location.href,
 					        volume: volumeApi ? volumeApi.get() : (volume ? volume.value : ''),
 					        volume_souhaite: volume ? volume.value : '',
+					        nom: fullname ? fullname.value.trim() : '',
 					        telephone: phone ? phone.value.trim() : '',
 					        code_postal: postal ? postal.value.trim() : '',
 					        societe: company ? company.value.trim() : '',
@@ -1421,15 +1430,6 @@ a.no-theme-style {
 					      }
 					    }
 
-					    function openCalendly() {
-					      if (!calendlyUrl) { return; }
-					      try {
-					        window.open(calendlyUrl, '_blank', 'noopener,noreferrer');
-					      } catch (error) {
-					        /* popup bloquée : le bouton de confirmation reste disponible */
-					      }
-					    }
-
 					    function submit(event) {
 					      if (event) { event.preventDefault(); }
 					      if (submitted) { return; }
@@ -1442,7 +1442,6 @@ a.no-theme-style {
 					      if (!validateStep2()) { return; }
 
 					      var data = collect();
-					      openCalendly();
 					      send(data);
 					      track(data);
 					      showSuccess();
@@ -1465,7 +1464,7 @@ a.no-theme-style {
 					    }
 
 					    /* Nettoyage des erreurs à la saisie */
-					    [phone, postal, company].forEach(function (input) {
+					    [fullname, phone, postal, company].forEach(function (input) {
 					      if (!input) { return; }
 					      input.addEventListener('input', function () { clearError(input); });
 					      input.addEventListener('change', function () { clearError(input); });
@@ -1522,10 +1521,6 @@ a.no-theme-style {
 					    }
 
 					    form.addEventListener('submit', submit);
-
-					    if (calendlyUrl && calendlyLink && !calendlyLink.getAttribute('href')) {
-					      calendlyLink.setAttribute('href', calendlyUrl);
-					    }
 
 					    linkErrors();
 					    showStep(0, { focus: false });

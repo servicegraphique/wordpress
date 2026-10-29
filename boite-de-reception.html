@@ -301,11 +301,11 @@
 
   <div class="notice" role="status">
     <span class="notice__icon" aria-hidden="true">●</span>
-    <p>
-      <strong>Mode local.</strong> Les demandes envoyées depuis le formulaire sont enregistrées dans le stockage
-      de ce navigateur (<code>localStorage</code>) : elles ne quittent pas l'appareil et aucun e-mail n'est envoyé.
-      Les deux messages ci-dessous sont ceux qui partiraient en production — ils sont générés à l'identique.
-      Videz le stockage du navigateur ou utilisez « Tout effacer » pour supprimer ces données.
+    <p data-notice>
+      <strong>Journal local.</strong> Chaque demande envoyée depuis le formulaire est conservée ici
+      (stockage du navigateur, <code>localStorage</code>) : c'est la trace de ce qui a été transmis.
+      Les deux messages ci-dessous sont ceux reçus par le responsable et, le cas échéant, par le prospect.
+      Utilisez « Tout effacer » pour supprimer ces données.
     </p>
   </div>
 
@@ -539,12 +539,25 @@
     toggle.type = 'button';
     toggle.setAttribute('aria-expanded', 'false');
 
+
     var spacer = element('span', 'spacer');
 
     var remove = element('button', 'btn btn--danger', 'Supprimer');
     remove.type = 'button';
 
     foot.appendChild(toggle);
+
+    // Sans back-end, la confirmation au prospect ne peut pas partir toute
+    // seule : on la prépare en un clic dans la messagerie du poste.
+    if (emails.client && data.email) {
+      var confirmation = element('a', 'btn', 'Envoyer la confirmation au client');
+      confirmation.href = 'mailto:' + encodeURIComponent(data.email)
+        + '?subject=' + encodeURIComponent(emails.client.subject || 'Votre demande a bien été reçue')
+        + '&body=' + encodeURIComponent(emails.client.text || '');
+      confirmation.setAttribute('title', 'Ouvre votre messagerie avec le message prêt à envoyer');
+      foot.appendChild(confirmation);
+    }
+
     foot.appendChild(spacer);
     foot.appendChild(remove);
 
@@ -607,9 +620,43 @@
       return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
     }).length;
 
+    updateNotice(leads);
     document.querySelector('[data-stat="total"]').textContent = String(leads.length);
     document.querySelector('[data-stat="month"]').textContent = String(thisMonth);
     document.querySelector('[data-stat="last"]').textContent = leads.length ? dateFr(leads[0].receivedAt) : '—';
+  }
+
+  function updateNotice(leads) {
+    var box = document.querySelector('[data-notice]');
+    if (!box) { return; }
+
+    var last = leads.length ? leads[0] : null;
+    var provider = last && last.provider ? last.provider : '';
+    box.textContent = '';
+
+    var strong = element('strong', null, '');
+    var text;
+
+    if (provider === 'local') {
+      strong.textContent = 'Mode local. ';
+      text = 'Les demandes sont enregistrées dans ce navigateur et aucun e-mail n’est envoyé : '
+        + 'les deux messages ci-dessous sont ceux qui partiraient en production, générés à l’identique. '
+        + 'Passez provider à « formsubmit » dans la page pour un envoi réel.';
+    } else if (provider === 'formsubmit' || provider === 'web3forms') {
+      strong.textContent = 'Relais d’e-mail actif. ';
+      text = 'Les demandes partent réellement vers le responsable, avec le chef de département en copie. '
+        + 'La confirmation destinée au prospect est générée ici : le bouton « Envoyer la confirmation au client » '
+        + 'l’ouvre dans votre messagerie, prête à partir.';
+    } else if (provider === 'endpoint') {
+      strong.textContent = 'Envoi serveur. ';
+      text = 'Les demandes sont transmises à l’endpoint configuré, qui envoie la notification et la confirmation au prospect.';
+    } else {
+      strong.textContent = 'Journal local. ';
+      text = 'Chaque demande envoyée depuis le formulaire est conservée ici : c’est la trace de ce qui a été transmis.';
+    }
+
+    box.appendChild(strong);
+    box.appendChild(document.createTextNode(text));
   }
 
   /* ---------------------------- exports ------------------------------ */

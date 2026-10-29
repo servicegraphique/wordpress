@@ -8,7 +8,7 @@ et sans back-end**. Toute la logique est dans le JavaScript de la page.
 Visiteur ──► formulaire (2 étapes, validation, accessibilité)
                  │
                  ▼
-        window.HLLeadConfig.provider
+      window.HL_LEAD_CONFIG.provider
                  │
       ┌──────────┼─────────────┬──────────────┐
       │          │             │              │
@@ -38,18 +38,22 @@ Puis ouvrir :
 | <http://localhost:8000/lead-energies/> | formulaire énergies |
 | <http://localhost:8000/boite-de-reception.html> | demandes reçues + e-mails générés |
 
-En mode `local` (valeur par défaut) :
+Le mode livré est **`formsubmit`** : une demande valide part réellement par
+e-mail vers `manajahelvin@gmail.com`, avec `ifeminformatique@gmail.com` en
+copie, sans aucun serveur.
 
-1. valider le formulaire affiche l'écran de succès habituel ;
-2. la demande est enregistrée dans le **stockage du navigateur**
-   (`localStorage`, clé `hl.leads.v1`) ;
-3. elle apparaît immédiatement dans `/boite-de-reception.html`, avec **les
-   deux e-mails réellement générés** : la notification destinée au
-   responsable (chef de département en copie) et la confirmation du prospect ;
-4. aucun octet ne part sur le réseau, aucun e-mail n'est envoyé.
+1. la première soumission déclenche un e-mail d'activation de FormSubmit
+   dans la boîte du responsable : **cliquer une fois sur le lien** ;
+2. à chaque envoi, la demande part immédiatement (objet
+   `[Lead <formulaire>] <société> — <volume> leads/mois`) ;
+3. une **copie locale** est conservée : elle apparaît dans
+   `/boite-de-reception.html` avec les deux messages générés, exportables en
+   JSON/CSV — utile si un e-mail se perd ;
+4. la confirmation destinée au prospect y est prête : le bouton
+   « Envoyer la confirmation au client » l'ouvre dans la messagerie du poste.
 
-C'est le mode à utiliser pour les démonstrations, les tests d'intégration et
-la validation client : le rendu des e-mails est celui de la production.
+Pour une démonstration sans aucun envoi, passer `provider: 'local'` : rien ne
+part sur le réseau, tout reste dans le navigateur.
 
 ---
 
@@ -57,8 +61,8 @@ la validation client : le rendu des e-mails est celui de la production.
 
 | | Destinataires | Contenu |
 |---|---|---|
-| Notification | `responsable` (À) · `chef` (Copie) · `Répondre à` = le prospect | coordonnées, volume, besoins, formulaire, page d'origine, UTM, date, référence, encart « Action attendue » |
-| Confirmation | le prospect (À) · `Répondre à` = `contactEmail` | « une équipe s'en charge », récapitulatif (sans métadonnées internes), lien politique de confidentialité |
+| Notification | `manajahelvin@gmail.com` (À) · `ifeminformatique@gmail.com` (Copie) · `Répondre à` = le prospect | coordonnées, volume, besoins, formulaire, page d'origine, UTM, date, référence, encart « Action attendue » |
+| Confirmation | le prospect (À) · `Répondre à` = `manajahelvin@gmail.com` | « une équipe s'en charge », récapitulatif (sans métadonnées internes), lien politique de confidentialité |
 
 Ils sont produits par `buildEmails()` dans le script du formulaire, à partir
 des mêmes gabarits que la production (HTML + version texte).
@@ -71,38 +75,36 @@ Tout se règle dans **un seul objet**, en haut du `<script>` de chaque page :
 
 ```js
 window.HL_LEAD_CONFIG = {
-  provider: 'local',
-  contactEmail: 'contact@hellodevis.fr',
+  provider: 'formsubmit',
+  contactEmail: 'manajahelvin@gmail.com',
   siteUrl: 'https://www.hellodevis.fr',
   inboxUrl: '/boite-de-reception.html',
   endpoint: '',
-  formsubmit: { email: '' },
+  formsubmit: { alias: '', email: 'manajahelvin@gmail.com' },
   web3forms: { accessKey: '' },
   form: {
     key: 'lead-assurances',
     label: 'Assurances pro',
-    responsable: ['responsable.assurances@hellodevis.fr'],
-    chef: ['chef.departement.assurances@hellodevis.fr']
+    responsable: ['manajahelvin@gmail.com'],   // À
+    chef: ['ifeminformatique@gmail.com']       // Copie
   }
 };
 ```
 
-### `local` — par défaut
+### `formsubmit` — actif (vrai e-mail, sans serveur)
 
-Aucun réglage. Les demandes restent dans le navigateur. Idéal pour la recette ;
-à ne pas laisser tel quel en production (les demandes ne sont pas transmises).
+La demande part vers le `responsable`, le `chef` est en copie, et
+`_replyto` porte l'adresse du prospect : répondre à l'e-mail écrit
+directement au client. Première soumission = e-mail d'activation à confirmer.
 
-### `formsubmit` — vrai e-mail sans serveur
+Astuce : après activation, FormSubmit fournit un **alias** (chaîne aléatoire).
+Le renseigner dans `formsubmit.alias` évite d'afficher l'adresse en clair dans
+le code source de la page.
 
-[FormSubmit](https://formsubmit.co) relaie le formulaire vers une boîte mail.
+### `local` — pour les démonstrations
 
-```js
-provider: 'formsubmit',
-formsubmit: { email: 'responsable.assurances@hellodevis.fr' }
-```
-
-La copie au chef de département est envoyée via le champ `_cc`. La première
-soumission déclenche un e-mail d'activation à confirmer une seule fois.
+Rien ne part. Les demandes restent dans le navigateur et sont consultables
+dans `/boite-de-reception.html`.
 
 ### `web3forms` — vrai e-mail sans serveur (clé API)
 
@@ -140,9 +142,27 @@ webhook interne.
 | Honeypot invisible | `aria-hidden`, `tabindex="-1"`, hors écran |
 | Nettoyage | `.trim()`, minuscules sur l'e-mail, chiffres forcés sur le code postal et le téléphone |
 
-Un formulaire sans serveur ne peut pas limiter le débit par IP : si le mode
-`formsubmit`/`web3forms` est utilisé en production, ces services appliquent
-leurs propres filtres, et le piège reste la première barrière.
+Un formulaire sans serveur ne peut pas limiter le débit par IP : le relais
+applique ses propres filtres, le piège reste la première barrière.
+
+### Point RGPD
+
+Avec `formsubmit`, les données du prospect transitent par un service tiers
+(FormSubmit) avant d'arriver dans la boîte du responsable : à mentionner dans
+la politique de confidentialité au titre des sous-traitants. Le mode
+`endpoint` avec un relais maîtrisé (PHP ou serverless) évite ce tiers.
+
+### Limite assumée du mode sans serveur
+
+La **confirmation automatique au client** exige un envoi serveur : un
+navigateur ne peut pas écrire au prospect depuis le domaine HelloLead. En
+mode `formsubmit`, l'écran de succès reste donc honnête (« Votre demande a
+bien été transmise à notre équipe. ») et la confirmation est préparée en un
+clic depuis la boîte de réception locale.
+
+Pour l'automatiser réellement : `production-php/` (PHP) ou un relais
+serverless (Cloudflare Worker, Netlify/Vercel Function) qui reçoit le POST et
+appelle un fournisseur d'e-mail transactionnel.
 
 ---
 
@@ -178,13 +198,13 @@ mais **cette page ne doit pas être publiée** sur le site en production.
 
 | Fichier | Rôle | Publier ? |
 |---|---|---|
-| `lead-*/index.html` | formulaire + moteur JS (config en tête de script) | oui |
+| `lead-*/index.html` | formulaire + moteur JS, `provider: 'formsubmit'` (config en tête de script) | oui |
 | `boite-de-reception.html` | boîte de réception locale des demandes | **non** |
 | `production-php/` | relais e-mail facultatif pour un serveur PHP (§ 8) | seulement si utilisé |
 | `FORMULAIRE-LEAD.md` | ce document | non |
 
 Le dossier `production-php/` est **optionnel** : rien dans les pages n'en dépend
-aujourd'hui (`provider: 'local'`). Il est conservé pour le jour où un envoi
+aujourd'hui (`provider: 'formsubmit'`). Il est conservé pour le jour où un envoi
 transactionnel côté serveur sera nécessaire.
 
 ---
@@ -209,8 +229,9 @@ Sans serveur PHP, **ne pas l'utiliser** : c'est précisément ce que le mode
 
 ## 9. Mise en production — liste de contrôle
 
-- [ ] `provider` différent de `local` (sinon les demandes restent dans le navigateur).
-- [ ] Adresses `responsable` / `chef` réelles dans les 4 pages.
+- [x] `provider: 'formsubmit'` actif dans les 4 pages.
+- [x] `responsable` = manajahelvin@gmail.com, `chef` = ifeminformatique@gmail.com.
+- [ ] Formulaire **activé une fois** via le lien reçu par e-mail à la première soumission.
 - [ ] `contactEmail` et `siteUrl` corrects.
 - [ ] `boite-de-reception.html` **non publiée**.
 - [ ] Un test réel produit bien 2 e-mails, et « Répondre » écrit au prospect.

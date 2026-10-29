@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Boîte de réception locale — formulaire HelloLead</title>
+<style>
+  :root {
+    --hl-red: #eb5846;
+    --hl-red-dark: #d8432f;
+    --hl-navy: #003366;
+    --hl-ink: #14171a;
+    --hl-text: #2f3033;
+    --hl-muted: #6b7280;
+    --hl-border: #e3e6ea;
+    --hl-bg: #f4f5f7;
+    --hl-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 8px 24px -16px rgba(16, 24, 40, .25);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--hl-bg);
+    color: var(--hl-ink);
+    font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--hl-red); }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- En-tête ---------- */
+
+  .top {
+    background: #fff;
+    border-bottom: 1px solid var(--hl-border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .top__bar { height: 4px; background: var(--hl-red); }
+
+  .top__inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+  }
+
+  .brand { display: flex; align-items: center; gap: 12px; }
+
+  .brand__mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--hl-red);
+    color: #fff;
+    font-weight: 800;
+    font-size: 15px;
+    display: grid;
+    place-items: center;
+    letter-spacing: .02em;
+  }
+
+  .brand__name { font-weight: 800; font-size: 15px; letter-spacing: .01em; }
+  .brand__sub { font-size: 12px; color: var(--hl-muted); }
+
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  .btn {
+    appearance: none;
+    border: 1px solid var(--hl-border);
+    background: #fff;
+    color: var(--hl-ink);
+    border-radius: 9px;
+    padding: 9px 14px;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease, color .15s ease;
+  }
+
+  .btn:hover { border-color: #c3c9d1; background: #fafbfc; }
+  .btn:focus-visible { outline: 2px solid #1a73e8; outline-offset: 2px; }
+  .btn--danger { color: #a3352a; border-color: #f0c3b9; background: #fff6f4; }
+  .btn--danger:hover { background: #fdece8; border-color: #e6a99b; }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+  /* ---------- Bandeau ---------- */
+
+  .notice {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin: 24px 0 0;
+    padding: 14px 16px;
+    border: 1px solid #d8e3f0;
+    background: #f5f9fd;
+    border-radius: 12px;
+    font-size: 13.5px;
+    color: var(--hl-navy);
+  }
+
+  .notice strong { font-weight: 700; }
+  .notice p { margin: 0; }
+  .notice__icon { color: var(--hl-red); font-size: 12px; line-height: 1.7; }
+
+  /* ---------- Statistiques ---------- */
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 18px 0 0;
+  }
+
+  .stat {
+    background: #fff;
+    border: 1px solid var(--hl-border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: var(--hl-shadow);
+  }
+
+  .stat__value { font-size: 24px; font-weight: 800; line-height: 1.1; }
+  .stat__label { font-size: 12px; color: var(--hl-muted); margin-top: 4px; }
+
+  /* ---------- Liste ---------- */
+
+  h1 { font-size: 24px; line-height: 1.25; margin: 28px 0 6px; }
+  .lede { margin: 0 0 20px; color: var(--hl-muted); font-size: 14.5px; }
+
+  .leads { display: grid; gap: 14px; margin: 0 0 48px; }
+
+  .lead {
+    background: #fff;
+    border: 1px solid var(--hl-border);
+    border-radius: 14px;
+    box-shadow: var(--hl-shadow);
+    overflow: hidden;
+  }
+
+  .lead__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 16px 18px 12px;
+  }
+
+  .lead__who { font-size: 16.5px; font-weight: 700; margin: 0; }
+  .lead__company { font-size: 13.5px; color: var(--hl-muted); }
+
+  .lead__when { font-size: 12.5px; color: var(--hl-muted); white-space: nowrap; }
+
+  .lead__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 10px 24px;
+    padding: 0 18px 16px;
+    font-size: 14px;
+  }
+
+  .kv { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 6px 10px; margin: 0; }
+  .kv dt { color: var(--hl-muted); font-size: 13px; }
+  .kv dd { margin: 0; overflow-wrap: anywhere; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+
+  .chip {
+    font-size: 12px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #f2f4f7;
+    border: 1px solid #e6e9ee;
+    color: #3d4450;
+  }
+
+  .chip--accent { background: #fff2ef; border-color: #f7d7cf; color: #a3352a; font-weight: 600; }
+
+  .lead__foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding: 12px 18px 16px;
+    border-top: 1px solid #f0f2f4;
+    background: #fcfcfd;
+  }
+
+  .lead__foot .spacer { flex: 1 1 auto; }
+
+  .emails { border-top: 1px solid #f0f2f4; padding: 16px 18px 20px; background: #fafbfc; }
+
+  .emails__title { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--hl-muted); font-weight: 700; margin: 0 0 12px; }
+
+  .mail + .mail { margin-top: 18px; }
+
+  .mail__head {
+    background: #fff;
+    border: 1px solid var(--hl-border);
+    border-bottom: 0;
+    border-radius: 10px 10px 0 0;
+    padding: 12px 14px;
+    font-size: 12.5px;
+  }
+
+  .mail__head dl { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 3px 10px; margin: 0; }
+  .mail__head dt { color: var(--hl-muted); }
+  .mail__head dd { margin: 0; overflow-wrap: anywhere; }
+
+  .mail__frame {
+    width: 100%;
+    height: 760px;
+    min-height: 240px;
+    border: 1px solid var(--hl-border);
+    border-radius: 0 0 10px 10px;
+    background: #f4f5f7;
+    display: block;
+  }
+
+  .empty {
+    background: #fff;
+    border: 1px dashed #cfd5dd;
+    border-radius: 14px;
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--hl-muted);
+  }
+
+  .empty h2 { margin: 0 0 8px; font-size: 17px; color: var(--hl-ink); }
+  .empty p { margin: 0 0 16px; font-size: 14px; }
+  .empty ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translate(-50%, 12px);
+    background: #14171a;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+    z-index: 50;
+  }
+
+  .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 860px) {
+    .lead__body { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr; }
+    .mail__frame { height: 560px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: .001ms !important; animation-duration: .001ms !important; }
+  }
+
+  @media print {
+    .top, .tools, .notice, .lead__foot { display: none !important; }
+    .mail__frame { height: 900px; }
+    body { background: #fff; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top__bar"></div>
+  <div class="wrap top__inner">
+    <div class="brand">
+      <div class="brand__mark" aria-hidden="true">HL</div>
+      <div>
+        <div class="brand__name">HelloLead</div>
+        <div class="brand__sub">Boîte de réception locale</div>
+      </div>
+    </div>
+    <div class="tools">
+      <button class="btn" type="button" data-action="export-json">Exporter en JSON</button>
+      <button class="btn" type="button" data-action="export-csv">Exporter en CSV</button>
+      <button class="btn btn--danger" type="button" data-action="clear" disabled>Tout effacer</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="notice" role="status">
+    <span class="notice__icon" aria-hidden="true">●</span>
+    <p>
+      <strong>Mode local.</strong> Les demandes envoyées depuis le formulaire sont enregistrées dans le stockage
+      de ce navigateur (<code>localStorage</code>) : elles ne quittent pas l'appareil et aucun e-mail n'est envoyé.
+      Les deux messages ci-dessous sont ceux qui partiraient en production — ils sont générés à l'identique.
+      Videz le stockage du navigateur ou utilisez « Tout effacer » pour supprimer ces données.
+    </p>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat__value" data-stat="total">0</div>
+      <div class="stat__label">Demandes enregistrées</div>
+    </div>
+    <div class="stat">
+      <div class="stat__value" data-stat="month">0</div>
+      <div class="stat__label">Ce mois-ci</div>
+    </div>
+    <div class="stat">
+      <div class="stat__value" data-stat="last">—</div>
+      <div class="stat__label">Dernière réception</div>
+    </div>
+  </div>
+
+  <h1>Demandes reçues</h1>
+  <p class="lede">Chaque demande contient la notification destinée au responsable (avec le chef de département en copie) et la confirmation envoyée au prospect.</p>
+
+  <div class="leads" data-leads></div>
+  <div class="empty" data-empty hidden>
+    <h2>Aucune demande pour le moment</h2>
+    <p>Validez le formulaire de l'une des pages lead : la demande apparaîtra ici immédiatement.</p>
+    <ul>
+      <li><a class="btn" href="/lead-assurances/">Assurances</a></li>
+      <li><a class="btn" href="/lead-assurances-rcs/">Assurances RCS</a></li>
+      <li><a class="btn" href="/lead-energies/">Énergies</a></li>
+      <li><a class="btn" href="/lead-energies-rcs/">Énergies RCS</a></li>
+    </ul>
+  </div>
+</main>
+
+<div class="toast" role="status" aria-live="polite" data-toast></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORE_KEY = 'hl.leads.v1';
+
+  var leadsRoot = document.querySelector('[data-leads]');
+  var emptyBox = document.querySelector('[data-empty]');
+  var clearButton = document.querySelector('[data-action="clear"]');
+  var toastBox = document.querySelector('[data-toast]');
+  var toastTimer = null;
+
+  /* ---------------------------- stockage ---------------------------- */
+
+  function readLeads() {
+    try {
+      var raw = window.localStorage.getItem(STORE_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Object.prototype.toString.call(list) === '[object Array]' ? list : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function writeLeads(list) {
+    try {
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(list));
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /* ---------------------------- utilitaires -------------------------- */
+
+  function toast(message) {
+    if (!toastBox) { return; }
+    toastBox.textContent = message;
+    toastBox.classList.add('is-on');
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(function () { toastBox.classList.remove('is-on'); }, 2600);
+  }
+
+  function element(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) { node.className = className; }
+    if (text != null) { node.textContent = text; }
+    return node;
+  }
+
+  function dateFr(iso) {
+    var date = new Date(iso);
+    if (isNaN(date.getTime())) { return '—'; }
+    var pad = function (value) { return value < 10 ? '0' + value : String(value); };
+    return pad(date.getDate()) + '/' + pad(date.getMonth() + 1) + '/' + date.getFullYear()
+      + ' à ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+  }
+
+  function download(filename, content, mime) {
+    var blob = new Blob([content], { type: mime + ';charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+
+  function mailRecipients(list) {
+    return (list || []).join(', ');
+  }
+
+  /* ------------------------------ rendu ------------------------------ */
+
+  function mailBlock(label, mail) {
+    var wrapper = element('div', 'mail');
+
+    var head = element('div', 'mail__head');
+    var dl = document.createElement('dl');
+
+    var rows = [
+      ['Message', label],
+      ['À', mail.to && mail.to.length ? mailRecipients(mail.to) : '—']
+    ];
+    if (mail.cc && mail.cc.length) { rows.push(['Copie', mailRecipients(mail.cc)]); }
+    if (mail.replyTo) { rows.push(['Répondre à', mail.replyTo]); }
+    rows.push(['Objet', mail.subject]);
+
+    rows.forEach(function (row) {
+      dl.appendChild(element('dt', null, row[0]));
+      dl.appendChild(element('dd', null, row[1]));
+    });
+
+    head.appendChild(dl);
+
+    var frame = document.createElement('iframe');
+    frame.className = 'mail__frame';
+    frame.setAttribute('title', label + ' — ' + mail.subject);
+    // allow-same-origin : le document généré reste de même origine, ce qui
+    // permet d'ajuster la hauteur du cadre au contenu (aucun script exécuté).
+    frame.setAttribute('sandbox', 'allow-same-origin');
+
+    frame.addEventListener('load', function () {
+      try {
+        var doc = frame.contentDocument;
+        if (!doc || !doc.documentElement) { return; }
+        // On mesure le corps du message, pas le document : la hauteur du
+        // document vaut au minimum celle du cadre (mesure circulaire).
+        var height = doc.body
+          ? Math.max(doc.body.getBoundingClientRect().height, doc.body.scrollHeight)
+          : doc.documentElement.scrollHeight;
+        // Un message court ne doit pas laisser un cadre de 760 px de haut.
+        if (height > 40) { frame.style.height = Math.max(240, height + 24) + 'px'; }
+      } catch (error) { /* origine isolée : on garde la hauteur par défaut */ }
+    });
+
+    frame.srcdoc = mail.html || '<!DOCTYPE html><html lang="fr"><body></body></html>';
+
+    wrapper.appendChild(head);
+    wrapper.appendChild(frame);
+
+    return wrapper;
+  }
+
+  function leadCard(lead) {
+    var data = lead.data || {};
+    var emails = lead.emails || {};
+    var card = element('article', 'lead');
+    card.dataset.id = lead.id || '';
+
+    /* en-tête */
+    var head = element('div', 'lead__head');
+    var left = element('div');
+    var title = element('h2', 'lead__who', data.nom || 'Demande sans nom');
+    var company = element('p', 'lead__company', data.societe || '');
+    company.style.margin = '2px 0 0';
+    left.appendChild(title);
+    left.appendChild(company);
+
+    var when = element('p', 'lead__when', dateFr(lead.receivedAt));
+    when.style.margin = '0';
+
+    head.appendChild(left);
+    head.appendChild(when);
+
+    /* corps */
+    var body = element('div', 'lead__body');
+
+    var dl = element('dl', 'kv');
+    var rows = [
+      ['E-mail', data.email],
+      ['Téléphone', data.telephone],
+      ['Code postal', data.code_postal],
+      ['Formulaire', lead.label || data.formulaire],
+      ['Page', data.page],
+      ['Référence', data.lead_id]
+    ];
+
+    rows.forEach(function (row) {
+      if (!row[1]) { return; }
+      dl.appendChild(element('dt', null, row[0]));
+      var dd = element('dd');
+
+      if (row[0] === 'E-mail') {
+        var link = element('a', null, row[1]);
+        link.href = 'mailto:' + row[1];
+        dd.appendChild(link);
+      } else if (row[0] === 'Téléphone') {
+        var tel = element('a', null, row[1]);
+        tel.href = 'tel:' + String(row[1]).replace(/\s+/g, '');
+        dd.appendChild(tel);
+      } else {
+        dd.textContent = row[1];
+      }
+
+      dl.appendChild(dd);
+    });
+
+    body.appendChild(dl);
+
+    var side = element('div');
+    var chips = element('ul', 'chips');
+    if (data.volume) { chips.appendChild(element('li', 'chip chip--accent', data.volume + ' leads / mois')); }
+    (data.besoins || []).forEach(function (besoin) {
+      chips.appendChild(element('li', 'chip', besoin));
+    });
+    side.appendChild(chips);
+    body.appendChild(side);
+
+    /* pied */
+    var foot = element('div', 'lead__foot');
+    var toggle = element('button', 'btn', 'Voir les e-mails générés');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', 'false');
+
+    var spacer = element('span', 'spacer');
+
+    var remove = element('button', 'btn btn--danger', 'Supprimer');
+    remove.type = 'button';
+
+    foot.appendChild(toggle);
+    foot.appendChild(spacer);
+    foot.appendChild(remove);
+
+    /* panneau e-mails — construit à la première ouverture (aucune iframe au repos) */
+    var panel = element('div', 'emails');
+    panel.hidden = true;
+    var built = false;
+
+    function buildPanel() {
+      if (built) { return; }
+      built = true;
+      panel.appendChild(element('p', 'emails__title', 'E-mails générés par cette demande'));
+      if (emails.internal) {
+        panel.appendChild(mailBlock('Responsable (chef de département en copie)', emails.internal));
+      }
+      if (emails.client) {
+        panel.appendChild(mailBlock('Confirmation au prospect', emails.client));
+      }
+    }
+
+    toggle.addEventListener('click', function () {
+      var open = panel.hidden;
+      if (open) { buildPanel(); }
+      panel.hidden = !open;
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.textContent = open ? 'Masquer les e-mails' : 'Voir les e-mails générés';
+    });
+
+    remove.addEventListener('click', function () {
+      var list = readLeads().filter(function (item) { return item.id !== lead.id; });
+      writeLeads(list);
+      render();
+      toast('Demande supprimée.');
+    });
+
+    card.appendChild(head);
+    card.appendChild(body);
+    card.appendChild(foot);
+    card.appendChild(panel);
+
+    return card;
+  }
+
+  function render() {
+    var leads = readLeads().slice().sort(function (a, b) {
+      return new Date(b.receivedAt || 0) - new Date(a.receivedAt || 0);
+    });
+
+    leadsRoot.textContent = '';
+    leads.forEach(function (lead) {
+      leadsRoot.appendChild(leadCard(lead));
+    });
+
+    emptyBox.hidden = leads.length > 0;
+    clearButton.disabled = leads.length === 0;
+
+    var now = new Date();
+    var thisMonth = leads.filter(function (lead) {
+      var date = new Date(lead.receivedAt);
+      return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+    }).length;
+
+    document.querySelector('[data-stat="total"]').textContent = String(leads.length);
+    document.querySelector('[data-stat="month"]').textContent = String(thisMonth);
+    document.querySelector('[data-stat="last"]').textContent = leads.length ? dateFr(leads[0].receivedAt) : '—';
+  }
+
+  /* ---------------------------- exports ------------------------------ */
+
+  function exportJson() {
+    var leads = readLeads();
+    if (!leads.length) { toast('Aucune demande à exporter.'); return; }
+    download(
+      'demandes-lead-' + new Date().toISOString().slice(0, 10) + '.json',
+      JSON.stringify({ exportedAt: new Date().toISOString(), count: leads.length, leads: leads }, null, 2),
+      'application/json'
+    );
+    toast(leads.length + ' demande(s) exportée(s).');
+  }
+
+  function csvCell(value) {
+    var text = String(value == null ? '' : value).replace(/\r?\n/g, ' ');
+    return '"' + text.replace(/"/g, '""') + '"';
+  }
+
+  function exportCsv() {
+    var leads = readLeads();
+    if (!leads.length) { toast('Aucune demande à exporter.'); return; }
+
+    var head = ['Date', 'Formulaire', 'Nom et prénom', 'E-mail', 'Téléphone', 'Code postal', 'Société', 'Volume', 'Besoins', 'Page', 'Référence'];
+    var rows = leads.map(function (lead) {
+      var data = lead.data || {};
+      return [
+        dateFr(lead.receivedAt),
+        lead.label || data.formulaire || '',
+        data.nom || '',
+        data.email || '',
+        data.telephone || '',
+        data.code_postal || '',
+        data.societe || '',
+        data.volume || '',
+        (data.besoins || []).join(' ; '),
+        data.page || '',
+        data.lead_id || ''
+      ].map(csvCell).join(';');
+    });
+
+    download(
+      'demandes-lead-' + new Date().toISOString().slice(0, 10) + '.csv',
+      '\ufeff' + head.map(csvCell).join(';') + '\r\n' + rows.join('\r\n'),
+      'text/csv'
+    );
+    toast(leads.length + ' demande(s) exportée(s).');
+  }
+
+  /* ---------------------------- actions ------------------------------ */
+
+  document.addEventListener('click', function (event) {
+    var button = event.target.closest ? event.target.closest('[data-action]') : null;
+    if (!button) { return; }
+
+    var action = button.getAttribute('data-action');
+
+    if (action === 'export-json') { exportJson(); }
+    if (action === 'export-csv') { exportCsv(); }
+    if (action === 'clear') {
+      if (!window.confirm('Supprimer définitivement toutes les demandes enregistrées dans ce navigateur ?')) { return; }
+      writeLeads([]);
+      render();
+      toast('Stockage vidé.');
+    }
+  });
+
+  // Les demandes peuvent arriver depuis un autre onglet : on se resynchronise.
+  window.addEventListener('storage', function (event) {
+    if (event.key === STORE_KEY) { render(); }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

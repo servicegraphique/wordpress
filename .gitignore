@@ -2,3 +2,6 @@
 # compteurs de débit, copies .eml du transport « log »)
 logs/
 *.eml
+
+# Journaux du relais PHP optionnel (production-php/)
+production-php/logs/

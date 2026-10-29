@@ -72,21 +72,76 @@ Le fichier à installer est **`Code.gs`** (dans ce dossier).
 
 ## 3. Brancher le formulaire
 
-Dans **chacune des 4 pages** (`lead-assurances`, `lead-assurances-rcs`,
-`lead-energies`, `lead-energies-rcs`), en tête du `<script>` :
+### Où exactement ?
+
+Chaque page contient **un seul** bloc de configuration, en haut du `<script>`
+du widget du formulaire. Il commence par `window.HL_LEAD_CONFIG = {` et se
+termine par `};`. C'est le seul endroit à modifier.
+
+> **Dans ce dépôt, les 4 pages sont déjà renseignées** avec le déploiement de
+> production. Cette étape ne concerne donc que les pages à (ré)importer dans
+> WordPress, ou un futur changement de déploiement.
+
+Dans ce bloc, il y a **une seule ligne à changer** :
 
 ```js
-provider: 'gas',
-gas: {
-  url: 'https://script.google.com/macros/s/AKfy…/exec',
-  token: 'le-même-jeton-que-dans-TOKEN'
-},
-fallbackProvider: 'formsubmit',
+gas: { url: '', token: '' },
 ```
 
-Puis envoyer une demande test : **trois e-mails** doivent arriver (responsable,
-chef avec l'objet `[Copie] …`, et le prospect saisi), tous expédiés par
-`ifeminformatique@gmail.com`.
+Rechercher cette ligne dans la page (Ctrl+F / ⌘+F sur `gas:`), et la remplacer
+par les deux valeurs relevées à l'étape 2 :
+
+```js
+gas: { url: 'https://script.google.com/macros/s/AKfy…/exec', token: 'le-même-jeton-que-dans-TOKEN' },
+```
+
+Rien d'autre ne bouge : ni `provider: 'gas'` (déjà en place), ni
+`fallbackProvider` (déjà en place), ni les adresses. Attention à garder :
+
+- les **guillemets simples** autour des deux valeurs ;
+- la **virgule finale** ;
+- le jeton **identique** à la constante `TOKEN` du script (majuscules et
+  chiffres compris).
+
+### Comment y accéder selon l'endroit où vit la page
+
+| Contexte | Chemin |
+|---|---|
+| **WordPress + Elementor** | ouvrir la page → cliquer sur le bloc qui contient le formulaire → onglet **Contenu** du widget **HTML** → bouton **Modifier le HTML** → chercher `HL_LEAD_CONFIG` dans le code |
+| **Éditeur de thème / fichiers du site** | ouvrir `lead-…/index.html` → chercher `HL_LEAD_CONFIG` |
+| **Jeu de pages de ce dépôt** | mêmes fichiers : `lead-…/index.html` |
+
+### Les 4 pages à modifier (une fois chacune)
+
+| Page | Fichier |
+|---|---|
+| Assurances | `lead-assurances/index.html` |
+| Assurances RCS | `lead-assurances-rcs/index.html` |
+| Énergies | `lead-energies/index.html` |
+| Énergies RCS | `lead-energies-rcs/index.html` |
+
+Les **mêmes** `url` et `token` servent sur les quatre pages.
+
+### Vérifier que c'est bien pris en compte
+
+1. Enregistrer la page, l'ouvrir dans un navigateur, **vider le cache**
+   (Ctrl+Shift+R).
+2. Console du navigateur (F12) :
+
+   ```js
+   window.HL_LEAD_CONFIG.gas
+   // → { url: 'https://script.google.com/macros/s/AKfy…/exec', token: '…' }
+   ```
+
+   Si `url` et `token` sont vides, la modification n'a pas été enregistrée (ou
+   pas sur la bonne page).
+3. Envoyer une demande test : **trois e-mails** arrivent (responsable, chef avec
+   l'objet `[Copie] …`, et le prospect saisi), tous expédiés par
+   `ifeminformatique@gmail.com`.
+
+> Si vous préférez ne pas toucher au code : transmettez l'`url` et le `token` à
+> l'équipe technique — ce sont exactement ces deux valeurs, et rien d'autre, à
+> reporter dans les quatre pages.
 
 ---
 
@@ -105,9 +160,10 @@ Bien au-delà du besoin réel : 30 demandes/jour = 900 par mois.
 ## 5. Sécurité, à connaître
 
 - L'URL et le jeton sont **visibles dans le code source de la page** (comme
-  toute configuration côté navigateur). Ils empêchent un usage accidentel, pas
-  un usage malveillant déterminé : quelqu'un qui les extrait peut envoyer des
-  messages depuis la boîte, **dans la limite de 30 demandes/jour**.
+  toute configuration côté navigateur) et donc dans ce dépôt Git. Ils empêchent
+  un usage accidentel, pas un usage malveillant déterminé : quelqu'un qui les
+  extrait peut envoyer des messages depuis la boîte, **dans la limite de
+  30 demandes/jour**.
 - En cas d'abus : changer `TOKEN` dans le script → **Déployer → Gérer les
   déploiements → Modifier → Nouvelle version**, puis reporter le nouveau jeton
   dans les 4 pages.

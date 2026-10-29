@@ -118,7 +118,8 @@ Procédure détaillée et dépannage : **`production-gas/README.md`**. Résumé 
 
 L'URL et le jeton sont visibles dans le code de la page, comme toute
 configuration côté navigateur : ils empêchent un usage accidentel, pas un usage
-malveillant déterminé — d'où le plafond de 30 demandes/jour. En cas d'abus :
+malveillant déterminé — d'où le plafond de 30 demandes/jour. Ils figurent donc
+aussi dans ce dépôt (public) une fois la configuration posée. En cas d'abus :
 changer `TOKEN` dans le script, redéployer une **nouvelle version**, reporter le
 nouveau jeton dans les 4 pages.
 
@@ -318,11 +319,11 @@ remplace.
 - [x] `provider: 'gas'`, `fallbackProvider: 'formsubmit'` dans les 4 pages.
 - [x] `responsable` = manajahelvin@gmail.com, `chef` = ifeminformatique@gmail.com,
       `contactEmail` = ifeminformatique@gmail.com.
-- [ ] Projet Apps Script créé **depuis `ifeminformatique@gmail.com`**.
-- [ ] `TOKEN` remplacé par un jeton long et aléatoire.
-- [ ] Application web déployée (*moi* / *Tout le monde*), URL `/exec` testée
-      dans un navigateur (`{"ok":true,…, "ready":true}`).
-- [ ] `gas.url` et `gas.token` renseignés **dans les 4 pages**.
+- [x] Projet Apps Script créé **depuis `ifeminformatique@gmail.com`**.
+- [x] `TOKEN` remplacé par un jeton long et aléatoire.
+- [x] Application web déployée (*moi* / *Tout le monde*), URL `/exec` publiée.
+- [x] `gas.url` et `gas.token` renseignés **dans les 4 pages** (dépôt).
+- [ ] Pages **importées dans WordPress** avec ces deux valeurs (mêmes lignes).
 - [ ] Une demande test produit bien **3 e-mails**, tous expédiés par
       `ifeminformatique@gmail.com`, et « Répondre » écrit au prospect.
 - [ ] Repli FormSubmit activé une fois (lien d'activation reçu par e-mail).

@@ -1,0 +1,4 @@
+# Journaux du formulaire de lead (données personnelles pseudonymisées,
+# compteurs de débit, copies .eml du transport « log »)
+logs/
+*.eml

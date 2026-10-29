@@ -482,11 +482,11 @@ a.no-theme-style {
 		<div class="elementor-element elementor-element-50ff960a e-con-full e-flex e-con e-child" data-id="50ff960a" data-element_type="container">
 				<div class="elementor-element elementor-element-1682fc78 elementor-widget elementor-widget-html" data-id="1682fc78" data-element_type="widget" data-widget_type="html.default">
 				<div class="elementor-widget-container">
-										<!-- Formulaire de lead HelloLead – 2 étapes.
-					     Étape 1 : volume de leads / mois · Étape 2 : nom, coordonnées, besoins et volume souhaité.
-					     Configuration : attribut data-endpoint sur .hl-lead-form (URL recevant un POST JSON du lead).
-					     Sans endpoint, le lead est uniquement poussé dans dataLayer (event "hl_lead_form_submit")
-					     et diffusé via l'événement DOM "hl:lead-form:submit". -->
+										<!-- Formulaire de lead HelloLead – 2 étapes + envoi par e-mail.
+	     Étape 1 : volume de leads / mois · Étape 2 : coordonnées, besoins et volume souhaité.
+	     Envoi : POST JSON vers /lead-form-mail.php — notification au responsable + copie au chef de
+	     département + confirmation au prospect. Configuration : lead-form-config.php.
+	     Endpoint injoignable : message de repli avec l’adresse contact@hellolead.fr. -->
 					<style>
 					/* =====================================================================
 					   Formulaire de lead Hellodevis – 2 étapes (volume -> coordonnées)
@@ -890,6 +890,81 @@ a.no-theme-style {
 					}
 
 					/* ---------- Responsive ---------- */
+
+					/* ---------- Bandeau d'alerte ---------- */
+					.hl-lead-form .hl-lf-alert {
+					  margin: 0 0 14px;
+					  padding: 12px 14px;
+					  border: 1px solid #f0c3b9;
+					  border-radius: 9px;
+					  background: #fff6f4;
+					  color: #8a2d20;
+					  font-size: 13.5px;
+					  line-height: 1.5;
+					  font-weight: 600;
+					}
+
+					.hl-lead-form .hl-lf-alert a {
+					  color: #b8402f;
+					  font-weight: 700;
+					  text-decoration: underline;
+					}
+
+					/* ---------- Bouton en cours d'envoi ---------- */
+					.hl-lead-form .hl-lf-btn.is-loading {
+					  background: var(--hl-red-dark);
+					  cursor: progress;
+					  box-shadow: none;
+					}
+
+					.hl-lead-form .hl-lf-btn.is-loading::after {
+					  content: "";
+					  width: 16px;
+					  height: 16px;
+					  margin-left: 10px;
+					  border: 2px solid rgba(255, 255, 255, 0.45);
+					  border-top-color: #fff;
+					  border-radius: 50%;
+					  animation: hl-lf-spin 0.7s linear infinite;
+					}
+
+					@keyframes hl-lf-spin {
+					  to { transform: rotate(360deg); }
+					}
+
+					/* ---------- Champ piège (anti-spam) ---------- */
+					.hl-lead-form .hl-lf-hp {
+					  position: absolute !important;
+					  left: -9999px !important;
+					  top: auto;
+					  width: 1px;
+					  height: 1px;
+					  overflow: hidden;
+					}
+
+					/* ---------- Mention légale sous le bouton ---------- */
+					.hl-lead-form .hl-lf-consent {
+					  margin: 12px 0 0;
+					  font-size: 12px;
+					  line-height: 1.5;
+					  color: var(--hl-muted);
+					  text-align: center;
+					}
+
+					.hl-lead-form .hl-lf-consent a {
+					  color: var(--hl-navy);
+					  text-decoration: underline;
+					}
+
+					/* ---------- Écran de confirmation ---------- */
+					.hl-lead-form .hl-lf-success__email {
+					  margin: 10px 0 0;
+					  font-size: 13px;
+					  line-height: 1.5;
+					  color: var(--hl-muted);
+					  word-break: break-word;
+					}
+
 					@media (max-width: 767px) {
 					  .hl-lead-form { max-width: 100%; }
 
@@ -904,6 +979,8 @@ a.no-theme-style {
 					  .hl-lead-form .hl-lf-input, .hl-lead-form .hl-lf-select2, .hl-lead-form .hl-lf-select__trigger { font-size: 16px; }
 
 					  .hl-lead-form .hl-lf-btn { font-size: 15px; min-height: 50px; }
+					  .hl-lead-form .hl-lf-alert { font-size: 13px; padding: 11px 12px; }
+					  .hl-lead-form .hl-lf-consent { font-size: 11.5px; }
 					}
 
 					@media (prefers-reduced-motion: reduce) {
@@ -912,10 +989,8 @@ a.no-theme-style {
 					    animation-duration: 0.001ms !important;
 					  }
 					}
-
 					</style>
-
-					<div class="hl-lead-form" data-hl-form="lead-assurances-rcs" data-endpoint="">
+					<div class="hl-lead-form" data-hl-form="lead-assurances-rcs" data-endpoint="/lead-form-mail.php" data-fallback-email="contact@hellolead.fr">
 						<div class="hl-lf-card">
 							<div class="hl-lf-head">
 								<h2 class="hl-lf-title">Parlons de votre projet</h2>
@@ -926,6 +1001,12 @@ a.no-theme-style {
 								</div>
 							</div>
 							<form class="hl-lf-form" novalidate>
+								<input type="hidden" name="lead_id" value="">
+								<input type="hidden" name="ts" value="">
+								<div class="hl-lf-hp" aria-hidden="true">
+									<label for="hl-lf-hp-assurances-rcs">Site web (ne pas remplir)</label>
+									<input type="text" id="hl-lf-hp-assurances-rcs" name="website" tabindex="-1" autocomplete="off">
+								</div>
 								<div class="hl-lf-step" data-hl-step="1">
 									<div class="hl-lf-field">
 										<span class="hl-lf-label" id="hl-lf-volume-label-assurances-rcs">Volume de leads / mois <span class="hl-lf-req">*</span></span>
@@ -951,6 +1032,12 @@ a.no-theme-style {
 										<label class="hl-lf-sr-only" for="hl-lf-nom-assurances-rcs">Nom et prénom (obligatoire)</label>
 										<input class="hl-lf-input" id="hl-lf-nom-assurances-rcs" name="nom" type="text" autocomplete="name" placeholder="Nom et Prénom*" aria-required="true">
 										<p class="hl-lf-error" role="alert" hidden>Merci d’indiquer votre nom et prénom.</p>
+									</div>
+
+									<div class="hl-lf-field">
+										<label class="hl-lf-sr-only" for="hl-lf-mail-assurances-rcs">E-mail (obligatoire)</label>
+										<input class="hl-lf-input" id="hl-lf-mail-assurances-rcs" name="email" type="email" inputmode="email" autocomplete="email" spellcheck="false" placeholder="E-mail*" aria-required="true">
+										<p class="hl-lf-error" role="alert" hidden>Merci d’indiquer une adresse e-mail valide.</p>
 									</div>
 									<div class="hl-lf-field">
 										<label class="hl-lf-sr-only" for="hl-lf-tel-assurances-rcs">Téléphone (obligatoire)</label>
@@ -1008,13 +1095,16 @@ a.no-theme-style {
 										</div>
 										<p class="hl-lf-error" role="alert" hidden>Merci de sélectionner un volume de leads.</p>
 									</div>
-									<button type="submit" class="hl-lf-btn">Envoyer ma demande</button>
+									<p class="hl-lf-alert" data-hl-alert role="alert" hidden></p>
+									<button type="submit" class="hl-lf-btn" data-hl-submit>Envoyer ma demande</button>
+									<p class="hl-lf-consent">En envoyant ce formulaire, vous acceptez d’être recontacté par nos équipes. Vos données sont traitées conformément à notre <a href="/politique-de-confidentialite-donnees-personnelles/" target="_blank" rel="noopener">politique de confidentialité</a>.</p>
 									<button type="button" class="hl-lf-back" data-hl-back><span aria-hidden="true">←</span> Retour</button>
 								</div>
 								<div class="hl-lf-success" hidden>
 									<div class="hl-lf-success__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
 									<p class="hl-lf-success__title" role="status">Merci, votre demande est enregistrée</p>
 									<p class="hl-lf-success__text">Un expert HelloLead vous recontacte rapidement pour construire votre plan de leads personnalisé.</p>
+									<p class="hl-lf-success__email" data-hl-success-email hidden></p>
 								</div>
 							</form>
 						</div>
@@ -1022,9 +1112,11 @@ a.no-theme-style {
 
 					<script>
 					/* =====================================================================
-					   Formulaire de lead Hellodevis – 2 étapes
-					   - Étape 1 : volume de leads souhaité (select custom)
-					   - Étape 2 : nom, coordonnées, besoins et volume souhaité
+					   Formulaire de lead HelloLead — 2 étapes + envoi serveur
+					   - Étape 1 : volume de leads souhaité (select accessible)
+					   - Étape 2 : nom, e-mail, téléphone, code postal, société, besoins, volume
+					   - Envoi POST JSON vers lead-form-mail.php (notification responsable +
+					     copie chef de département + confirmation prospect)
 					   Aucune dépendance (pas de jQuery).
 					   ===================================================================== */
 					(function () {
@@ -1035,6 +1127,16 @@ a.no-theme-style {
 					  function toArray(list) { return Array.prototype.slice.call(list || []); }
 					  function $(selector, context) { return (context || document).querySelector(selector); }
 					  function $$(selector, context) { return toArray((context || document).querySelectorAll(selector)); }
+
+					  /* ------------------------------------------------------------------
+					     Validation
+					     ------------------------------------------------------------------ */
+
+					  function isValidEmail(raw) {
+					    var value = String(raw == null ? '' : raw).trim();
+					    if (value.length < 6 || value.length > 190) { return false; }
+					    return /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(value);
+					  }
 
 					  function isValidPhone(raw) {
 					    var value = String(raw == null ? '' : raw).trim();
@@ -1060,9 +1162,29 @@ a.no-theme-style {
 					    return /^\d{5}$/.test(String(raw == null ? '' : raw).trim());
 					  }
 
+					  function generateLeadId() {
+					    try {
+					      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+					        return 'hl-' + window.crypto.randomUUID();
+					      }
+					      if (window.crypto && window.crypto.getRandomValues) {
+					        var bytes = new Uint8Array(12);
+					        window.crypto.getRandomValues(bytes);
+					        var out = '';
+					        for (var i = 0; i < bytes.length; i++) {
+					          out += ('0' + bytes[i].toString(16)).slice(-2);
+					        }
+					        return 'hl-' + out;
+					      }
+					    } catch (error) { /* contexte non sécurisé : repli ci-dessous */ }
+
+					    return 'hl-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+					  }
+
 					  /* ------------------------------------------------------------------
 					     Select personnalisé (étape 1)
 					     ------------------------------------------------------------------ */
+
 					  function initSelect(select) {
 					    if (!select || select.dataset.hlReady === 'true') { return; }
 					    select.dataset.hlReady = 'true';
@@ -1122,8 +1244,7 @@ a.no-theme-style {
 					        item.setAttribute('aria-selected', item === option ? 'true' : 'false');
 					      });
 					      select.hlSelectedOption = option;
-					      var value = option.getAttribute('data-value');
-					      input.value = value;
+					      input.value = option.getAttribute('data-value');
 					      valueEl.textContent = option.textContent.trim();
 					      select.classList.add('is-filled');
 					      close(true);
@@ -1136,8 +1257,9 @@ a.no-theme-style {
 					      set: function (value) {
 					        var match = null;
 					        options.forEach(function (option) {
-					          option.setAttribute('aria-selected', option.getAttribute('data-value') === value ? 'true' : 'false');
-					          if (option.getAttribute('data-value') === value) { match = option; }
+					          var isMatch = option.getAttribute('data-value') === value;
+					          option.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+					          if (isMatch) { match = option; }
 					        });
 					        select.hlSelectedOption = match;
 					        if (match) {
@@ -1205,8 +1327,67 @@ a.no-theme-style {
 					  }
 
 					  /* ------------------------------------------------------------------
+					     Requête réseau
+					     ------------------------------------------------------------------ */
+
+					  function postJson(url, payload) {
+					    return new Promise(function (resolve, reject) {
+					      var timeout = window.setTimeout(function () {
+					        reject({ status: 0, payload: null, reason: 'timeout' });
+					      }, 20000);
+
+					      function done(status, body) {
+					        window.clearTimeout(timeout);
+					        var parsed = null;
+					        if (body) {
+					          try { parsed = JSON.parse(body); } catch (error) { parsed = null; }
+					        }
+					        resolve({ status: status, payload: parsed });
+					      }
+
+					      function fail() {
+					        window.clearTimeout(timeout);
+					        reject({ status: 0, payload: null, reason: 'network' });
+					      }
+
+					      if (typeof window.fetch === 'function') {
+					        var options = {
+					          method: 'POST',
+					          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+					          body: JSON.stringify(payload),
+					          credentials: 'same-origin'
+					        };
+
+					        if (typeof window.AbortController === 'function') {
+					          var controller = new window.AbortController();
+					          options.signal = controller.signal;
+					          window.setTimeout(function () { controller.abort(); }, 20000);
+					        }
+
+					        window.fetch(url, options).then(function (response) {
+					          return response.text().then(function (text) {
+					            done(response.status, text);
+					          });
+					        }).catch(fail);
+					        return;
+					      }
+
+					      var xhr = new XMLHttpRequest();
+					      xhr.open('POST', url, true);
+					      xhr.setRequestHeader('Content-Type', 'application/json');
+					      xhr.setRequestHeader('Accept', 'application/json');
+					      xhr.timeout = 20000;
+					      xhr.onload = function () { done(xhr.status, xhr.responseText); };
+					      xhr.onerror = fail;
+					      xhr.ontimeout = fail;
+					      xhr.send(JSON.stringify(payload));
+					    });
+					  }
+
+					  /* ------------------------------------------------------------------
 					     Formulaire
 					     ------------------------------------------------------------------ */
+
 					  function initForm(root) {
 					    if (!root || root.dataset.hlReady === 'true') { return; }
 					    root.dataset.hlReady = 'true';
@@ -1218,15 +1399,24 @@ a.no-theme-style {
 					    var fill = $('.hl-lf-progress__fill', root);
 					    var stepLabel = $('[data-hl-step-label]', root);
 					    var success = $('.hl-lf-success', root);
+					    var alertBox = $('[data-hl-alert]', root);
+					    var submitButton = $('[data-hl-submit]', root);
+					    var successEmail = $('[data-hl-success-email]', root);
 					    var endpoint = root.getAttribute('data-endpoint') || '';
+					    var fallbackEmail = root.getAttribute('data-fallback-email') || '';
 					    var formName = root.getAttribute('data-hl-form') || 'lead';
+					    var tsField = form.elements['ts'];
+					    var leadIdField = form.elements['lead_id'];
+					    var honeypot = form.elements['website'];
 					    var current = 0;
 					    var submitted = false;
+					    var sending = false;
 
 					    var volumeSelectEl = $('[data-hl-select]', root);
 					    var volumeApi = volumeSelectEl ? volumeSelectEl.hlSelect : null;
 
 					    var fullname = form.elements['nom'];
+					    var email = form.elements['email'];
 					    var phone = form.elements['telephone'];
 					    var postal = form.elements['code_postal'];
 					    var company = form.elements['societe'];
@@ -1234,45 +1424,51 @@ a.no-theme-style {
 
 					    var rules = [
 					      {
+					        name: 'nom',
 					        el: fullname,
 					        test: function () { return fullname.value.trim().length >= 2 && /\s/.test(fullname.value.trim()); },
 					        message: 'Merci d’indiquer votre nom et prénom.'
 					      },
 					      {
+					        name: 'email',
+					        el: email,
+					        test: function () { return isValidEmail(email.value); },
+					        message: 'Merci d’indiquer une adresse e-mail valide.'
+					      },
+					      {
+					        name: 'telephone',
 					        el: phone,
 					        test: function () { return isValidPhone(phone.value); },
 					        message: 'Merci d’indiquer un numéro de téléphone valide.'
 					      },
 					      {
+					        name: 'code_postal',
 					        el: postal,
 					        test: function () { return isValidPostalCode(postal.value); },
 					        message: 'Merci d’indiquer un code postal à 5 chiffres.'
 					      },
 					      {
+					        name: 'societe',
 					        el: company,
 					        test: function () { return company.value.trim().length >= 2; },
 					        message: 'Merci d’indiquer le nom de votre société.'
 					      },
 					      {
+					        name: 'volume_souhaite',
 					        el: volume,
 					        test: function () { return !!volume.value; },
 					        message: 'Merci de sélectionner un volume de leads.'
 					      }
 					    ];
 
-					    function fieldOf(el) { return el ? el.closest('.hl-lf-field') : null; }
+					    /* --------------------- Horodatage & identifiant --------------------- */
 
-					    function linkErrors() {
-					      $$('.hl-lf-error', form).forEach(function (error, index) {
-					        var field = error.closest('.hl-lf-field');
-					        if (!field) { return; }
-					        if (!error.id) { error.id = 'hl-lf-error-' + formName + '-' + index; }
-					        var control = $('input:not([type="hidden"]), select, .hl-lf-select__trigger', field);
-					        if (control && !control.getAttribute('aria-describedby')) {
-					          control.setAttribute('aria-describedby', error.id);
-					        }
-					      });
-					    }
+					    if (tsField) { tsField.value = String(Date.now()); }
+					    if (leadIdField) { leadIdField.value = generateLeadId(); }
+
+					    /* ------------------------------ Erreurs ---------------------------- */
+
+					    function fieldOf(el) { return el ? el.closest('.hl-lf-field') : null; }
 
 					    function setError(el, show, message) {
 					      var field = fieldOf(el);
@@ -1289,6 +1485,45 @@ a.no-theme-style {
 
 					    function clearError(el) { setError(el, false); }
 
+					    function linkErrors() {
+					      $$('.hl-lf-error', form).forEach(function (error, index) {
+					        var field = error.closest('.hl-lf-field');
+					        if (!field) { return; }
+					        if (!error.id) { error.id = 'hl-lf-error-' + formName + '-' + index; }
+					        var control = $('input:not([type="hidden"]), select, .hl-lf-select__trigger', field);
+					        if (control && !control.getAttribute('aria-describedby')) {
+					          control.setAttribute('aria-describedby', error.id);
+					        }
+					      });
+					    }
+
+					    /* ------------------------------ Alertes ---------------------------- */
+
+					    function hideAlert() {
+					      if (!alertBox) { return; }
+					      alertBox.hidden = true;
+					      alertBox.textContent = '';
+					    }
+
+					    function showAlert(message, options) {
+					      if (!alertBox) { return; }
+					      var opts = options || {};
+					      alertBox.textContent = message;
+
+					      if (opts.email) {
+					        var link = document.createElement('a');
+					        link.href = 'mailto:' + opts.email;
+					        link.textContent = opts.email;
+					        alertBox.appendChild(document.createTextNode(' '));
+					        alertBox.appendChild(link);
+					        alertBox.appendChild(document.createTextNode('.'));
+					      }
+
+					      alertBox.hidden = false;
+					    }
+
+					    /* ----------------------------- Navigation -------------------------- */
+
 					    function firstFieldOf(step) {
 					      return $('input:not([type="hidden"]):not([disabled]), select:not([disabled]), .hl-lf-select__trigger', step);
 					    }
@@ -1296,15 +1531,9 @@ a.no-theme-style {
 					    function showStep(index, options) {
 					      var opts = options || {};
 					      current = Math.max(0, Math.min(index, steps.length - 1));
-					      steps.forEach(function (step, i) {
-					        step.hidden = i !== current;
-					      });
-					      if (fill) {
-					        fill.style.width = (((current + 1) / steps.length) * 100) + '%';
-					      }
-					      if (stepLabel) {
-					        stepLabel.textContent = 'Étape ' + (current + 1) + ' sur ' + steps.length;
-					      }
+					      steps.forEach(function (step, i) { step.hidden = i !== current; });
+					      if (fill) { fill.style.width = (((current + 1) / steps.length) * 100) + '%'; }
+					      if (stepLabel) { stepLabel.textContent = 'Étape ' + (current + 1) + ' sur ' + steps.length; }
 					      if (opts.focus !== false) {
 					        var target = firstFieldOf(steps[current]);
 					        if (target && target.focus) { target.focus({ preventScroll: true }); }
@@ -1341,109 +1570,200 @@ a.no-theme-style {
 					        if (firstInvalid.scrollIntoView) {
 					          firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
 					        }
+					        showAlert('Merci de vérifier les champs signalés en rouge.');
 					      }
 					      return !firstInvalid;
+					    }
+
+					    function applyServerErrors(errors) {
+					      var firstInvalid = null;
+					      Object.keys(errors || {}).forEach(function (name) {
+					        var rule = null;
+					        rules.forEach(function (item) { if (item.name === name) { rule = item; } });
+					        if (!rule || !rule.el) { return; }
+					        setError(rule.el, true, errors[name]);
+					        if (!firstInvalid) { firstInvalid = rule.el; }
+					      });
+					      if (firstInvalid) {
+					        if (firstInvalid.focus) { firstInvalid.focus({ preventScroll: true }); }
+					        if (firstInvalid.scrollIntoView) {
+					          firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					        }
+					      }
+					    }
+
+					    /* ------------------------------ Envoi ------------------------------ */
+
+					    function setSending(state) {
+					      sending = !!state;
+					      if (!submitButton) { return; }
+					      submitButton.disabled = sending;
+					      submitButton.setAttribute('aria-busy', sending ? 'true' : 'false');
+					      submitButton.classList.toggle('is-loading', sending);
+
+					      if (sending) {
+					        if (!submitButton.getAttribute('data-hl-label')) {
+					          submitButton.setAttribute('data-hl-label', submitButton.textContent);
+					        }
+					        submitButton.textContent = 'Envoi en cours…';
+					      } else if (submitButton.getAttribute('data-hl-label')) {
+					        submitButton.textContent = submitButton.getAttribute('data-hl-label');
+					      }
 					    }
 
 					    function collect() {
 					      var data = {
 					        formulaire: formName,
-					        page: window.location.href,
-					        volume: volumeApi ? volumeApi.get() : (volume ? volume.value : ''),
-					        volume_souhaite: volume ? volume.value : '',
 					        nom: fullname ? fullname.value.trim() : '',
+					        email: email ? email.value.trim() : '',
 					        telephone: phone ? phone.value.trim() : '',
 					        code_postal: postal ? postal.value.trim() : '',
 					        societe: company ? company.value.trim() : '',
+					        volume: volumeApi ? volumeApi.get() : (volume ? volume.value : ''),
+					        volume_souhaite: volume ? volume.value : '',
 					        besoins: $$('input[name="besoins"]:checked', form).map(function (input) { return input.value; }),
-					        date: new Date().toISOString()
+					        page: window.location.href,
+					        lead_id: leadIdField ? leadIdField.value : '',
+					        ts: tsField ? tsField.value : '',
+					        // Piège anti-robot : doit être transmis vide (le serveur le vérifie).
+					        website: honeypot ? honeypot.value : '',
+					        consent: true,
+					        utm: {}
 					      };
 
 					      try {
 					        var params = new URLSearchParams(window.location.search);
 					        ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid'].forEach(function (key) {
-					          if (params.get(key)) { data[key] = params.get(key); }
+					          if (params.get(key)) { data.utm[key] = params.get(key); }
 					        });
 					      } catch (error) { /* navigateurs anciens */ }
 
 					      return data;
 					    }
 
-					    function track(data) {
+					    function track(eventName, payload) {
 					      try {
 					        window.dataLayer = window.dataLayer || [];
-					        window.dataLayer.push({
-					          event: 'hl_lead_form_submit',
-					          form: formName,
-					          volume: data.volume,
-					          besoins: data.besoins,
-					          page: window.location.pathname
-					        });
+					        var entry = { event: eventName, form: formName, page: window.location.pathname };
+					        Object.keys(payload || {}).forEach(function (key) { entry[key] = payload[key]; });
+					        window.dataLayer.push(entry);
 					      } catch (error) { /* dataLayer indisponible */ }
+					    }
+
+					    function showSuccess(data) {
+					      submitted = true;
+					      steps.forEach(function (step) { step.hidden = true; });
+					      if (success) { success.hidden = false; }
+					      if (fill) { fill.style.width = '100%'; }
+					      if (stepLabel) { stepLabel.textContent = 'Demande envoyée'; }
+					      if (successEmail && data.email) {
+					        successEmail.textContent = 'Une confirmation vient d’être envoyée à ' + data.email + '.';
+					        successEmail.hidden = false;
+					      }
+
+					      var focusTarget = success ? $('.hl-lf-success__title', success) : null;
+					      if (focusTarget && focusTarget.focus) {
+					        focusTarget.setAttribute('tabindex', '-1');
+					        focusTarget.focus({ preventScroll: true });
+					      }
 
 					      try {
 					        document.dispatchEvent(new CustomEvent('hl:lead-form:submit', { detail: data }));
 					      } catch (error) { /* CustomEvent indisponible */ }
 					    }
 
-					    function send(data) {
-					      if (!endpoint) {
-					        if (window.console && console.info) {
-					          console.info('[Hellodevis] Lead capté (mode démo, aucun endpoint configuré) :', data);
-					        }
+					    function handleFailure(result) {
+					      var payload = (result && result.payload) || {};
+					      var status = result ? result.status : 0;
+
+					      setSending(false);
+
+					      if (status === 400 && payload.errors) {
+					        applyServerErrors(payload.errors);
+					        showAlert('Merci de vérifier les informations saisies.');
+					        track('hl_lead_form_error', { reason: 'validation' });
 					        return;
 					      }
-					      try {
-					        window.fetch(endpoint, {
-					          method: 'POST',
-					          headers: { 'Content-Type': 'application/json' },
-					          body: JSON.stringify(data),
-					          keepalive: true
-					        }).then(function (response) {
-					          if (!response.ok) { throw new Error('HTTP ' + response.status); }
-					        }).catch(function (error) {
-					          if (window.console && console.warn) {
-					            console.warn('[Hellodevis] Envoi du lead impossible :', error);
-					          }
-					        });
-					      } catch (error) {
-					        if (window.console && console.warn) {
-					          console.warn('[Hellodevis] Envoi du lead impossible :', error);
-					        }
-					      }
-					    }
 
-					    function showSuccess() {
-					      submitted = true;
-					      steps.forEach(function (step) { step.hidden = true; });
-					      if (success) { success.hidden = false; }
-					      if (fill) { fill.style.width = '100%'; }
-					      if (stepLabel) { stepLabel.textContent = 'Demande envoyée'; }
-					      var focusTarget = success ? $('.hl-lf-success__title', success) : null;
-					      if (focusTarget && focusTarget.focus) {
-					        focusTarget.setAttribute('tabindex', '-1');
-					        focusTarget.focus({ preventScroll: true });
+					      if (status === 429) {
+					        showAlert(payload.message || 'Trop de demandes envoyées récemment. Merci de réessayer dans quelques minutes.');
+					        track('hl_lead_form_error', { reason: 'rate_limited' });
+					        return;
 					      }
+
+					      if (status === 422) {
+					        showAlert(payload.message || 'Votre demande n’a pas pu être vérifiée. Merci de réessayer.');
+					        track('hl_lead_form_error', { reason: 'spam' });
+					        return;
+					      }
+
+					      if (status === 503) {
+					        showAlert(
+					          'Le formulaire est momentanément indisponible. Merci de nous écrire directement :',
+					          fallbackEmail ? { email: fallbackEmail } : undefined
+					        );
+					        track('hl_lead_form_error', { reason: 'not_configured' });
+					        return;
+					      }
+
+					      showAlert(
+					        'L’envoi n’a pas abouti. Merci de réessayer dans quelques instants' +
+					          (fallbackEmail ? ' ou de nous écrire à' : ''),
+					        fallbackEmail ? { email: fallbackEmail } : undefined
+					      );
+					      track('hl_lead_form_error', { reason: status ? 'http_' + status : ((result && result.reason) || 'network') });
 					    }
 
 					    function submit(event) {
 					      if (event) { event.preventDefault(); }
-					      if (submitted) { return; }
-					      var step1Ok = validateStep1();
-					      if (!step1Ok) {
+					      if (submitted || sending) { return; }
+
+					      if (!validateStep1()) {
 					        showStep(0);
 					        return;
 					      }
-					      if (current !== steps.length - 1) { showStep(steps.length - 1); return; }
+					      if (current !== steps.length - 1) {
+					        showStep(steps.length - 1);
+					        return;
+					      }
 					      if (!validateStep2()) { return; }
 
+					      if (!endpoint) {
+					        showAlert(
+					          'Le formulaire n’est pas encore relié à notre serveur. Merci de nous écrire directement :',
+					          fallbackEmail ? { email: fallbackEmail } : undefined
+					        );
+					        return;
+					      }
+
+					      hideAlert();
+					      setSending(true);
+
 					      var data = collect();
-					      send(data);
-					      track(data);
-					      showSuccess();
+
+					      postJson(endpoint, data).then(function (result) {
+					        var payload = result.payload || {};
+
+					        if (result.status >= 200 && result.status < 300 && payload.ok !== false) {
+					          setSending(false);
+					          showSuccess(data);
+					          track('hl_lead_form_submit', {
+					            volume: data.volume,
+					            besoins: data.besoins,
+					            lead_id: data.lead_id,
+					            duplicate: !!payload.duplicate
+					          });
+					          return;
+					        }
+
+					        handleFailure(result);
+					      }).catch(function (error) {
+					        handleFailure(error || { status: 0, payload: null });
+					      });
 					    }
 
-					    /* Synchronisation des deux selects de volume */
+					    /* --------------------- Synchronisation des volumes ------------------ */
+
 					    if (volume && volumeApi) {
 					      volume.value = volumeApi.get();
 					      volumeSelectEl.addEventListener('change', function () {
@@ -1459,8 +1779,9 @@ a.no-theme-style {
 					      });
 					    }
 
-					    /* Nettoyage des erreurs à la saisie */
-					    [fullname, phone, postal, company].forEach(function (input) {
+					    /* --------------------- Nettoyage à la saisie ----------------------- */
+
+					    [fullname, email, phone, postal, company].forEach(function (input) {
 					      if (!input) { return; }
 					      input.addEventListener('input', function () { clearError(input); });
 					      input.addEventListener('change', function () { clearError(input); });
@@ -1479,9 +1800,6 @@ a.no-theme-style {
 					        if (cleaned.length > 24) { cleaned = cleaned.slice(0, 24); }
 					        if (cleaned !== phone.value) { phone.value = cleaned; }
 					      });
-					    }
-
-					    if (phone) {
 					      phone.addEventListener('blur', function () {
 					        if (!phone.value.trim()) { return; }
 					        var formatted = formatFrenchPhone(phone.value);
@@ -1489,19 +1807,29 @@ a.no-theme-style {
 					      });
 					    }
 
-					    /* Navigation */
+					    if (email) {
+					      email.addEventListener('blur', function () {
+					        if (email.value) { email.value = email.value.trim().toLowerCase(); }
+					      });
+					    }
+
+					    /* ------------------------------ Navigation ------------------------- */
+
 					    $$('[data-hl-next]', root).forEach(function (button) {
 					      button.addEventListener('click', function () {
 					        if (!validateStep1()) { return; }
+					        hideAlert();
 					        showStep(current + 1);
 					      });
 					    });
 
 					    $$('[data-hl-back]', root).forEach(function (button) {
-					      button.addEventListener('click', function () { showStep(current - 1); });
+					      button.addEventListener('click', function () {
+					        hideAlert();
+					        showStep(current - 1);
+					      });
 					    });
 
-					    /* Entrée sur l'étape 1 */
 					    if (steps[0]) {
 					      steps[0].addEventListener('keydown', function (event) {
 					        if (event.key !== 'Enter') { return; }
@@ -1521,6 +1849,8 @@ a.no-theme-style {
 					    linkErrors();
 					    showStep(0, { focus: false });
 					    if (success) { success.hidden = true; }
+					    if (alertBox) { alertBox.hidden = true; }
+					    setSending(false);
 					  }
 
 					  function boot() {
@@ -1530,8 +1860,7 @@ a.no-theme-style {
 					    });
 					  }
 
-					  var api = { init: boot };
-					  window.HLLeadForm = window.HLLeadForm || api;
+					  window.HLLeadForm = window.HLLeadForm || { init: boot };
 
 					  if (document.readyState === 'loading') {
 					    document.addEventListener('DOMContentLoaded', boot);
@@ -1539,7 +1868,6 @@ a.no-theme-style {
 					    boot();
 					  }
 					})();
-
 					</script>
 				</div>
 				</div>

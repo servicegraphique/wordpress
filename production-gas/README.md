@@ -8,8 +8,11 @@ le script vit dans la boîte elle-même et expédie par l'infrastructure Gmail.
 ```
 Page du formulaire ──POST text/plain──► Application web Apps Script
         (une seule requête)                     │ exécutée par la boîte
-                                                ▼
-                              Gmail : 1) responsable  2) chef [Copie]  3) client
+                                                ├──► Gmail : 1) responsable
+                                                │             2) chef [Copie]
+                                                │             3) client
+                                                └──► Google Sheets : une ligne
+                                                     par prospect (suivi)
 ```
 
 Le fichier à installer est **`Code.gs`** (dans ce dossier).
@@ -163,7 +166,84 @@ Les **mêmes** `url` et `token` servent sur les quatre pages.
 
 ---
 
-## 4. Quotas et garde-fous
+## 4. Feuille de suivi Google (automatique)
+
+Chaque demande valide ajoute **une ligne** dans une feuille de calcul : les
+données complètes du prospect, prêtes pour le suivi individuel.
+
+### Comment ça se passe
+
+1. À la première demande après la mise à jour, le script **crée** la feuille
+   « Leads HelloLead — suivi », onglet **Leads**.
+2. Elle est **partagée automatiquement** en modification avec
+   `SHEET_EMAIL` (`manajahelvin@gmail.com` dans le script) : l'adresse reçoit un
+   e-mail d'invitation Google, il suffit de l'accepter.
+3. L'identifiant est mémorisé dans les propriétés du script (`SHEET_ID`) : la
+   même feuille sert ensuite indéfiniment.
+4. L'URL de la feuille est renvoyée par l'URL `/exec` (champ `sheet`) et par
+   chaque réponse du formulaire (`sheet.url`).
+
+> **Réautorisation nécessaire une seule fois** : l'accès à Sheets et Drive
+> ajoute des autorisations. Après avoir collé le nouveau `Code.gs`, lancer
+> **Exécuter → `testFeuille`** et accepter la demande de Google, puis
+> **Déployer → Gérer les déploiements → Nouvelle version → Déployer**.
+
+### Colonnes
+
+| # | Colonne | Contenu |
+|---|---|---|
+| 1 | Reçue le | date et heure (format `jj/mm/aaaa hh:mm`) |
+| 2 | Référence | identifiant unique de la demande (`hl-…`), sert à éviter les doublons |
+| 3 | Formulaire | Assurances pro, Énergies pro (RCS)… |
+| 4 | Nom et prénom | |
+| 5 | Société | |
+| 6 | E-mail | cliquable (`mailto:`) |
+| 7 | Téléphone | conservé en texte (zéros initiaux) |
+| 8 | Code postal | conservé en texte |
+| 9 | Volume souhaité | fourchette choisie à l'étape 1 |
+| 10 | Besoins | séparés par `·` |
+| 11 | Page d'origine | URL exacte du formulaire |
+| 12-16 | UTM source / support / campagne, `gclid`, `fbclid` | traçabilité des campagnes |
+| 17 | Suivi par | `SHEET_EMAIL` — qui traite la demande |
+| 18 | E-mails | ce qui est réellement parti : `3/3 (responsable, chef, client)` |
+
+Les en-têtes sont figés, les colonnes dimensionnées, la première ligne colorée
+aux couleurs du site.
+
+### Garanties
+
+- **Aucun doublon** : une même référence n'est jamais écrite deux fois, même si
+  le navigateur renvoie sa requête ; un verrou empêche deux écritures
+  simultanées.
+- **Jamais bloquant** : si la feuille est indisponible, les e-mails partent
+  quand même et le visiteur voit le succès normal.
+- **Aucune donnée inventée** : une ligne n'est écrite que si la fiche est
+  présente (les pages à jour l'envoient toujours).
+
+### Utiliser une feuille existante
+
+Créer la feuille, puis renseigner son identifiant (la partie entre `/d/` et
+`/edit` dans l'URL) dans **Paramètres du projet → Propriétés du script** :
+
+| Propriété | Valeur |
+|---|---|
+| `SHEET_ID` | `1AbC…xyz` |
+
+Ajouter l'onglet **Leads** (les en-têtes seront créés à la première demande).
+Le script n'essaiera pas de créer une autre feuille.
+
+### Purge RGPD
+
+Les données de prospects ne doivent pas être conservées indéfiniment :
+
+- **Exécuter → `purgerLeadsAnciens`** supprime les lignes de plus de 180 jours
+  (paramétrable : `purgerLeadsAnciens(90)`).
+- Un déclencheur mensuel peut l'automatiser : **Déclencheurs → Ajouter un
+  déclencheur → `purgerLeadsAnciens` → mensuel**.
+
+---
+
+## 5. Quotas et garde-fous
 
 | Limite | Valeur | Conséquence |
 |---|---|---|
@@ -175,7 +255,7 @@ Bien au-delà du besoin réel : 30 demandes/jour = 900 par mois.
 
 ---
 
-## 5. Sécurité, à connaître
+## 6. Sécurité, à connaître
 
 - L'URL et le jeton sont **visibles dans le code source de la page** (comme
   toute configuration côté navigateur) et donc dans ce dépôt Git. Ils empêchent
@@ -193,7 +273,7 @@ Bien au-delà du besoin réel : 30 demandes/jour = 900 par mois.
 
 ---
 
-## 6. Mettre à jour le script
+## 7. Mettre à jour le script
 
 Modifier `Code.gs` ne suffit pas : l'URL publique sert la **version déployée**.
 
@@ -202,7 +282,7 @@ Déployer.** L'URL `/exec` reste la même.
 
 ---
 
-## 7. Dépannage
+## 8. Dépannage
 
 | Symptôme | Cause probable | Solution |
 |---|---|---|
@@ -214,3 +294,7 @@ Déployer.** L'URL `/exec` reste la même.
 | Aucun e-mail reçu | adresse invalide, ou filtrage | consulter **Exécutions** (journal) et les indésirables |
 | L'expéditeur n'est pas celui attendu | script déployé depuis une autre boîte, « Exécuter en tant que » mal réglé, ou `FROM_ADDRESS` vide | vérifier le champ `from` renvoyé par l'URL `/exec` |
 | « Alias refusé » dans les journaux | adresse de `FROM_ADDRESS` non vérifiée dans Gmail | la vérifier (Paramètres → Comptes), ou vider `FROM_ADDRESS` |
+| Aucune feuille créée | autorisations Sheets/Drive non accordées, ou script non redéployé | Exécuter → `testFeuille`, accepter l'autorisation, redéployer une **nouvelle version** |
+| « Feuille introuvable » dans les journaux | feuille supprimée ou `SHEET_ID` erroné | vider la propriété `SHEET_ID` (le script en recrée une) ou corriger l'identifiant |
+| Lignes en double | envoi manuel répété avec une nouvelle référence | les doublons ne concernent que des références différentes ; supprimer la ligne à la main |
+| Téléphone sans le zéro initial | colonne modifiée à la main hors format texte | garder le format « Texte » sur la colonne G (format appliqué automatiquement aux nouvelles lignes) |

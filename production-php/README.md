@@ -1,7 +1,11 @@
 # Relais e-mail PHP — optionnel
 
 Ce dossier n'est **pas utilisé** par le formulaire : les 4 pages fonctionnent
-en JavaScript pur (`provider: 'local'`), sans serveur.
+en JavaScript pur (`provider: 'formsubmit'`), sans serveur.
+
+Les destinataires y sont déjà renseignés : `manajahelvin@gmail.com`
+(responsable, actuellement aussi expéditeur et adresse de réponse) et
+`ifeminformatique@gmail.com` (chef de département, en copie).
 
 Il est conservé uniquement pour le cas où un envoi transactionnel côté serveur
 deviendrait nécessaire (fonction `mail()`, SMTP, `wp_mail()`, journalisation,

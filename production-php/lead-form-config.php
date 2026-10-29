@@ -2,12 +2,14 @@
 /**
  * Configuration de l'envoi des formulaires de lead — HelloLead / Hellodevis.
  *
- * ⚠️  À FAIRE AVANT MISE EN PRODUCTION
- *   1. Remplacer les adresses @hellolead.fr ci-dessous par les adresses réelles
- *      (responsable de département + chef de département).
- *   2. Vérifier l'adresse d'expédition (`from`) : elle doit appartenir à un domaine
+ * À FAIRE AVANT MISE EN PRODUCTION
+ *   1. Vérifier l'adresse d'expédition (`from`) : elle doit appartenir à un domaine
  *      autorisé à envoyer (SPF/DKIM configurés, sinon les e-mails partent en spam).
- *   3. Passer `enabled` à true.
+ *   2. Passer `enabled` à true.
+ *
+ * Les destinataires sont déjà renseignés :
+ *   responsable : manajahelvin@gmail.com
+ *   chef de département (Cc) : ifeminformatique@gmail.com
  *
  * Tant que `enabled` est à false, l'endpoint répond 503 « not_configured »
  * et le formulaire affiche un message d'indisponibilité avec une adresse de repli.
@@ -45,7 +47,7 @@ return array(
 
     // Adresse affichée dans l'e-mail de confirmation (« répondez-nous ici »).
     'reply_to' => array(
-        'email' => 'contact@hellolead.fr', // ⚠️ à adapter
+        'email' => 'manajahelvin@gmail.com', // adresse d'expédition (voir SPF/DKIM)
         'name'  => 'HelloLead',
     ),
 
@@ -61,8 +63,8 @@ return array(
 
         'lead-assurances' => array(
             'label'       => 'Assurances pro',
-            'responsable' => array('responsable.assurances@hellolead.fr'),   // ⚠️ à remplacer
-            'chef'        => array('chef.departement.assurances@hellolead.fr'), // ⚠️ à remplacer
+            'responsable' => array('manajahelvin@gmail.com'),
+            'chef'        => array('ifeminformatique@gmail.com'), // ⚠️ à remplacer
             'besoins'     => array(
                 'Assurances professionnelles I.A.R.D',
                 'Assurances protection sociale Individuelle',
@@ -75,8 +77,8 @@ return array(
 
         'lead-assurances-rcs' => array(
             'label'       => 'Assurances pro (RCS)',
-            'responsable' => array('responsable.assurances@hellolead.fr'),   // ⚠️ à remplacer
-            'chef'        => array('chef.departement.assurances@hellolead.fr'), // ⚠️ à remplacer
+            'responsable' => array('manajahelvin@gmail.com'),
+            'chef'        => array('ifeminformatique@gmail.com'), // ⚠️ à remplacer
             'besoins'     => array(
                 'Assurances professionnelles I.A.R.D',
                 'Assurances protection sociale Individuelle',
@@ -89,8 +91,8 @@ return array(
 
         'lead-energies' => array(
             'label'       => 'Énergies pro',
-            'responsable' => array('responsable.energies@hellolead.fr'),      // ⚠️ à remplacer
-            'chef'        => array('chef.departement.energies@hellolead.fr'),  // ⚠️ à remplacer
+            'responsable' => array('manajahelvin@gmail.com'),   
+            'chef'        => array('ifeminformatique@gmail.com'),
             'besoins'     => array(
                 "Fourniture d'électricité",
                 'Fourniture de gaz',
@@ -104,8 +106,8 @@ return array(
 
         'lead-energies-rcs' => array(
             'label'       => 'Énergies pro (RCS)',
-            'responsable' => array('responsable.energies@hellolead.fr'),      // ⚠️ à remplacer
-            'chef'        => array('chef.departement.energies@hellolead.fr'),  // ⚠️ à remplacer
+            'responsable' => array('manajahelvin@gmail.com'),   
+            'chef'        => array('ifeminformatique@gmail.com'),
             'besoins'     => array(
                 "Fourniture d'électricité",
                 'Fourniture de gaz',
@@ -120,7 +122,7 @@ return array(
         // Repli si le formulaire envoyé n'est pas connu.
         'default' => array(
             'label'       => 'Contact',
-            'responsable' => array('contact@hellolead.fr'),                   // ⚠️ à remplacer
+            'responsable' => array('manajahelvin@gmail.com'),                
             'chef'        => array(),
         ),
     ),

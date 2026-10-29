@@ -486,8 +486,9 @@ a.no-theme-style {
 	     Étape 1 : volume de leads / mois · Étape 2 : coordonnées, besoins et volume souhaité.
 	     Aucun back-end : la configuration se règle dans window.HL_LEAD_CONFIG, en tête du
 	     script en bas de ce widget (provider, adresses responsable et chef de département).
-	     Mode local : les demandes sont enregistrées dans le navigateur et consultables
-	     dans /boite-de-reception.html, avec les deux e-mails générés. -->
+	     provider 'formsubmit' (actif) : la demande part réellement au responsable, le chef de
+	     département est en copie, sans serveur. provider 'local' : rien ne part et les
+	     demandes restent consultables dans /boite-de-reception.html. -->
 					<style>
 					/* =====================================================================
 					   Formulaire de lead Hellodevis – 2 étapes (volume -> coordonnées)
@@ -1013,7 +1014,7 @@ a.no-theme-style {
 					.hl-lead-form .hl-lf-demo a:hover,
 					.hl-lead-form .hl-lf-success__email a:hover { color: var(--hl-red-dark); }
 					</style>
-					<div class="hl-lead-form" data-hl-form="lead-energies-rcs" data-fallback-email="contact@hellodevis.fr">
+					<div class="hl-lead-form" data-hl-form="lead-energies-rcs" data-fallback-email="manajahelvin@gmail.com">
 						<div class="hl-lf-card">
 							<div class="hl-lf-head">
 								<h2 class="hl-lf-title">Parlons de votre projet</h2>
@@ -1146,18 +1147,27 @@ a.no-theme-style {
 					              'endpoint'   → POST JSON vers endpoint (PHP, serverless, API)
 					   ---------------------------------------------------------------------- */
 					window.HL_LEAD_CONFIG = {
-					  provider: 'local',
-					  contactEmail: 'contact@hellodevis.fr',
+					  // 'formsubmit' : envoi réel par relais d'e-mail, sans back-end.
+					  // 'local'      : rien ne part, tout reste dans ce navigateur (recette).
+					  provider: 'formsubmit',
+
+					  // Adresse affichée au prospect pour répondre (Reply-To de la confirmation).
+					  contactEmail: 'manajahelvin@gmail.com',
 					  siteUrl: 'https://www.hellodevis.fr',
 					  inboxUrl: '/boite-de-reception.html',
+
 					  endpoint: '',
-					  formsubmit: { email: '' },          // ex. 'contact@hellodevis.fr'
+
+					  // FormSubmit : 'alias' est la chaîne fournie après activation (recommandé,
+					  // elle évite d'afficher l'adresse en clair). Laisser vide = email ci-dessous.
+					  formsubmit: { alias: '', email: 'manajahelvin@gmail.com' },
 					  web3forms: { accessKey: '' },
+
 					  form: {
 					    key: 'lead-energies-rcs',
 					    label: 'Énergies pro (RCS)',
-					    responsable: ['responsable.energies@hellodevis.fr'],   // destinataire principal
-					    chef: ['chef.departement.energies@hellodevis.fr']                  // chef de département, en copie
+					    responsable: ['manajahelvin@gmail.com'],   // destinataire principal (À)
+					    chef: ['ifeminformatique@gmail.com']                  // chef de département (Copie)
 					  }
 					};
 
@@ -1166,12 +1176,13 @@ a.no-theme-style {
 					   - Étape 1 : volume de leads souhaité (select accessible)
 					   - Étape 2 : nom, e-mail, téléphone, code postal, société, besoins, volume
 					   - Envoi : fournisseur configurable (window.HL_LEAD_CONFIG)
-					       local      → enregistre la demande dans le navigateur (défaut),
-					                    génère les deux e-mails et les garde consultables dans
-					                    /boite-de-reception.html. Aucun serveur, aucun réseau.
-					       formsubmit → relais d'e-mail sans back-end (adresse destinataire)
-					       web3forms  → relais d'e-mail sans back-end (access key)
-					       endpoint   → POST JSON vers une URL (PHP, serverless, API interne)
+					       formsubmit → relais d'e-mail sans back-end : la demande part vraiment
+					                    vers le responsable (chef de département en copie) ;
+					       local      → rien ne part, la demande est enregistrée dans le
+					                    navigateur et consultable dans /boite-de-reception.html ;
+					       web3forms  → relais d'e-mail sans back-end (access key) ;
+					       endpoint   → POST JSON vers une URL (PHP, serverless, API interne).
+					     Dans tous les cas, une copie de la demande est conservée localement.
 					   Aucune dépendance (ni jQuery, ni framework).
 					   ===================================================================== */
 					(function () {
@@ -1639,26 +1650,28 @@ a.no-theme-style {
 					     endpoint    : POST JSON vers une URL (PHP, serverless, API interne)
 					     ------------------------------------------------------------------ */
 
+					  function keepLead(data, provider) {
+					    try {
+					      return storeLead({
+					        id: data.lead_id || ('hl-' + Date.now().toString(36)),
+					        receivedAt: new Date().toISOString(),
+					        form: data.formulaire,
+					        label: FORM_CFG.label || data.formulaire,
+					        page: data.page,
+					        provider: provider,
+					        data: data,
+					        emails: buildEmails(data)
+					      });
+					    } catch (error) {
+					      return { saved: false, duplicate: false };
+					    }
+					  }
+
 					  function sendLocal(data) {
 					    return new Promise(function (resolve) {
 					      var delay = 380 + Math.floor(Math.random() * 260);
 					      window.setTimeout(function () {
-					        var result;
-					        try {
-					          result = storeLead({
-					            id: data.lead_id || ('hl-' + Date.now().toString(36)),
-					            receivedAt: new Date().toISOString(),
-					            form: data.formulaire,
-					            label: FORM_CFG.label || data.formulaire,
-					            page: data.page,
-					            provider: 'local',
-					            data: data,
-					            emails: buildEmails(data)
-					          });
-					        } catch (error) {
-					          result = { saved: false, duplicate: false };
-					        }
-
+					        var result = keepLead(data, 'local');
 					        resolve({
 					          status: 200,
 					          payload: { ok: true, mode: 'local', stored: !!result.saved, duplicate: !!result.duplicate }
@@ -1668,7 +1681,10 @@ a.no-theme-style {
 					  }
 
 					  function sendFormSubmit(data) {
-					    var target = (CONFIG.formsubmit && CONFIG.formsubmit.email) || '';
+					    var settings = CONFIG.formsubmit || {};
+					    // L'alias (chaîne aléatoire fournie par FormSubmit après activation) évite
+					    // d'exposer l'adresse e-mail dans le code source de la page.
+					    var target = settings.alias || settings.email || listOf(FORM_CFG.responsable)[0] || '';
 					    if (!target) {
 					      return Promise.reject({ status: 503, payload: { code: 'not_configured' } });
 					    }
@@ -1692,7 +1708,12 @@ a.no-theme-style {
 					    var cc = listOf(FORM_CFG.chef);
 					    if (cc.length) { body._cc = cc.join(','); }
 
-					    return postJson('https://formsubmit.co/ajax/' + encodeURIComponent(target), body);
+					    // FormSubmit attend l'adresse telle quelle dans le chemin : on n'encode
+					    // que les caractères réellement interdits, en laissant « @ » lisible.
+					    var endpoint = 'https://formsubmit.co/ajax/' + encodeURIComponent(target).replace(/%40/g, '@');
+
+					    return postJson(endpoint, body)
+					      .then(function (result) { return normalizeRelay(result, data); });
 					  }
 
 					  function sendWeb3Forms(data) {
@@ -1715,7 +1736,34 @@ a.no-theme-style {
 					      besoins: (data.besoins || []).join(', '),
 					      page: data.page,
 					      lead_id: data.lead_id
-					    });
+					    }).then(function (result) { return normalizeRelay(result, data); });
+					  }
+
+					  /* Les relais répondent 200 avec { success: "false", message: "..." } quand
+					     ils refusent (activation manquante, quota, adresse invalide). On ramène
+					     ça au même contrat que les autres fournisseurs. */
+					  function normalizeRelay(result, data) {
+					    var payload = (result && result.payload) || {};
+					    var ok = payload.success;
+
+					    if (ok === 'true' || ok === true) {
+					      return { status: 200, payload: { ok: true, mode: PROVIDER } };
+					    }
+
+					    if (ok === 'false' || ok === false) {
+					      return {
+					        status: 0,
+					        payload: { ok: false, code: 'relay', mode: PROVIDER, message: String(payload.message || '') },
+					        reason: 'relay'
+					      };
+					    }
+
+					    // Réponse inattendue : on considère l'envoi comme non confirmé.
+					    if (result && result.status >= 200 && result.status < 300) {
+					      return { status: 200, payload: { ok: true, mode: PROVIDER, unconfirmed: true } };
+					    }
+
+					    return result;
 					  }
 
 					  function sendEndpoint(data) {
@@ -1728,10 +1776,25 @@ a.no-theme-style {
 					  }
 
 					  function deliver(data) {
-					    if (PROVIDER === 'formsubmit') { return sendFormSubmit(data); }
-					    if (PROVIDER === 'web3forms') { return sendWeb3Forms(data); }
-					    if (PROVIDER === 'endpoint') { return sendEndpoint(data); }
-					    return sendLocal(data);
+					    if (PROVIDER === 'local') { return sendLocal(data); }
+
+					    var promise;
+					    if (PROVIDER === 'formsubmit') { promise = sendFormSubmit(data); }
+					    else if (PROVIDER === 'web3forms') { promise = sendWeb3Forms(data); }
+					    else { promise = sendEndpoint(data); }
+
+					    return promise.then(function (result) {
+					      // Même en mode distant, une copie locale est conservée : si le relais
+					      // perd le message, la demande reste consultable et exportable.
+					      if (result && result.status >= 200 && result.status < 300) {
+					        var kept = keepLead(data, PROVIDER);
+					        result.payload = result.payload || {};
+					        result.payload.mode = result.payload.mode || PROVIDER;
+					        result.payload.stored = !!kept.saved;
+					        result.payload.duplicate = !!kept.duplicate;
+					      }
+					      return result;
+					    });
 					  }
 
 					  /* ------------------------------------------------------------------
@@ -2088,8 +2151,15 @@ a.no-theme-style {
 					            successEmail.appendChild(inboxLink);
 					          }
 					          successEmail.hidden = false;
-					        } else if (mode !== 'spam' && data.email) {
+					        } else if (mode === 'endpoint' && data.email) {
+					          // Le relais serveur envoie réellement la confirmation au prospect.
 					          successEmail.textContent = 'Une confirmation vient d’être envoyée à ' + data.email + '.';
+					          successEmail.hidden = false;
+					        } else if (mode !== 'spam') {
+					          // Relais d'e-mail sans serveur : la demande part bien vers l'équipe,
+					          // mais aucune confirmation ne peut être adressée au prospect sans
+					          // back-end. On ne promet donc rien de faux.
+					          successEmail.textContent = 'Votre demande a bien été transmise à notre équipe.';
 					          successEmail.hidden = false;
 					        }
 					      }
@@ -2136,6 +2206,29 @@ a.no-theme-style {
 					          fallbackEmail ? { email: fallbackEmail } : undefined
 					        );
 					        track('hl_lead_form_error', { reason: 'not_configured' });
+					        return;
+					      }
+
+					      // Refus explicite d'un relais d'e-mail (activation en attente, quota…).
+					      if (payload.code === 'relay') {
+					        var relayMessage = String(payload.message || '');
+
+					        if (/activ|confirm/i.test(relayMessage)) {
+					          showAlert(
+					            'Le formulaire vient d’être installé : sa validation par le service d’envoi est encore en attente. '
+					              + 'Merci de nous écrire directement à',
+					            fallbackEmail ? { email: fallbackEmail } : undefined
+					          );
+					          track('hl_lead_form_error', { reason: 'relay_activation' });
+					          return;
+					        }
+
+					        showAlert(
+					          'Le service d’envoi a refusé la demande. Merci de réessayer dans quelques instants'
+					            + (fallbackEmail ? ' ou de nous écrire à' : ''),
+					          fallbackEmail ? { email: fallbackEmail } : undefined
+					        );
+					        track('hl_lead_form_error', { reason: 'relay_error' });
 					        return;
 					      }
 
@@ -2319,6 +2412,7 @@ a.no-theme-style {
 					    boot();
 					  }
 					})();
+
 					</script>
 				</div>
 				</div>

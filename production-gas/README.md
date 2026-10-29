@@ -45,6 +45,23 @@ Le fichier à installer est **`Code.gs`** (dans ce dossier).
 - Un e-mail de test arrive dans la boîte ; le journal (**Exécutions**) affiche
   `{"ok":true,"sent":{"responsable":true}}`.
 
+### Expéditeur affiché (`FROM_ADDRESS`)
+
+Par défaut (`var FROM_ADDRESS = '';`), les messages partent de la boîte qui
+héberge le script — l'authentification Gmail est alors parfaite sans réglage.
+
+Pour afficher une autre adresse, par exemple `pbenateau@hellolead.pro` :
+
+1. Gmail → **Paramètres** → onglet **Comptes** → « Envoyer des e-mails en tant
+   que » → **Ajouter une autre adresse e-mail** → vérifier l'adresse.
+2. Dans `Code.gs` : `var FROM_ADDRESS = 'pbenateau@hellolead.pro';`
+3. **Déployer → Gérer les déploiements → (crayon) → Nouvelle version →
+   Déployer.**
+
+Si Gmail refuse l'alias (non vérifié, révoqué), le script le signale dans le
+journal et **expédie quand même** depuis la boîte : aucune demande perdue.
+L'adresse réellement utilisée est visible sur l'URL `/exec` (champ `from`).
+
 ---
 
 ## 2. Publier l'application web
@@ -135,9 +152,10 @@ Les **mêmes** `url` et `token` servent sur les quatre pages.
 
    Si `url` et `token` sont vides, la modification n'a pas été enregistrée (ou
    pas sur la bonne page).
-3. Envoyer une demande test : **trois e-mails** arrivent (responsable, chef avec
-   l'objet `[Copie] …`, et le prospect saisi), tous expédiés par
-   `ifeminformatique@gmail.com`.
+3. Envoyer une demande test : **trois e-mails** arrivent — `cremy@hellolead.pro`
+   (responsable), `pbenateau@hellolead.pro` (objet `[Copie] …`) et le prospect
+   saisi — expédiés par la boîte qui héberge le script (ou par `FROM_ADDRESS`,
+   § précédent).
 
 > Si vous préférez ne pas toucher au code : transmettez l'`url` et le `token` à
 > l'équipe technique — ce sont exactement ces deux valeurs, et rien d'autre, à
@@ -194,4 +212,5 @@ Déployer.** L'URL `/exec` reste la même.
 | `{"ok":false,"error":"quota"}` | 30 demandes/jour ou 100 e-mails/jour atteints | le formulaire bascule seul sur FormSubmit |
 | `Script function not found: doPost` | fichier non enregistré, ou déploiement sur une autre version | enregistrer puis redéployer |
 | Aucun e-mail reçu | adresse invalide, ou filtrage | consulter **Exécutions** (journal) et les indésirables |
-| L'expéditeur n'est pas `ifeminformatique@gmail.com` | script déployé depuis une autre boîte, ou « Exécuter en tant que » mal réglé | recréer le déploiement depuis le bon compte |
+| L'expéditeur n'est pas celui attendu | script déployé depuis une autre boîte, « Exécuter en tant que » mal réglé, ou `FROM_ADDRESS` vide | vérifier le champ `from` renvoyé par l'URL `/exec` |
+| « Alias refusé » dans les journaux | adresse de `FROM_ADDRESS` non vérifiée dans Gmail | la vérifier (Paramètres → Comptes), ou vider `FROM_ADDRESS` |

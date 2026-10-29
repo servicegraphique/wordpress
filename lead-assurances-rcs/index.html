@@ -1016,7 +1016,7 @@ a.no-theme-style {
 					.hl-lead-form .hl-lf-demo a:hover,
 					.hl-lead-form .hl-lf-success__email a:hover { color: var(--hl-red-dark); }
 					</style>
-					<div class="hl-lead-form" data-hl-form="lead-assurances-rcs" data-fallback-email="ifeminformatique@gmail.com">
+					<div class="hl-lead-form" data-hl-form="lead-assurances-rcs" data-fallback-email="pbenateau@hellolead.pro">
 						<div class="hl-lf-card">
 							<div class="hl-lf-head">
 								<h2 class="hl-lf-title">Parlons de votre projet</h2>
@@ -1147,9 +1147,9 @@ a.no-theme-style {
 					              'endpoint'   → POST JSON vers endpoint (PHP, serverless, API)
 					   ---------------------------------------------------------------------- */
 					window.HL_LEAD_CONFIG = {
-					  // Les trois e-mails (responsable, chef de département, client) partent de
-					  // la même boîte : ifeminformatique@gmail.com, via le relais Google Apps
-					  // Script installé dans cette boîte (production-gas/).
+					  // Les trois e-mails (responsable, chef de département, client) sont
+					  // expédiés par le relais Google Apps Script installé dans la boîte
+					  // technique ifeminformatique@gmail.com (production-gas/).
 					  provider: 'gas',
 					  senderName: 'HelloLead',
 
@@ -1157,7 +1157,7 @@ a.no-theme-style {
 					  ccChef: false,
 
 					  // Adresse affichée au prospect pour répondre (Reply-To de la confirmation).
-					  contactEmail: 'ifeminformatique@gmail.com',
+					  contactEmail: 'pbenateau@hellolead.pro',
 					  siteUrl: 'https://www.hellodevis.fr',
 					  inboxUrl: '/boite-de-reception.html',
 
@@ -1179,15 +1179,15 @@ a.no-theme-style {
 					  // Tant que le relais Gmail n'est pas configuré (url et token vides) — ou
 					  // s'il refuse — les demandes partent par FormSubmit : aucune perte.
 					  fallbackProvider: 'formsubmit',
-					  formsubmit: { alias: '', email: 'manajahelvin@gmail.com' },
+					  formsubmit: { alias: '', email: 'cremy@hellolead.pro' },
 
 					  web3forms: { accessKey: '' },
 
 					  form: {
 					    key: 'lead-assurances-rcs',
 					    label: 'Assurances pro (RCS)',
-					    responsable: ['manajahelvin@gmail.com'],   // destinataire principal (À)
-					    chef: ['ifeminformatique@gmail.com']        // chef de département, e-mail dédié
+					    responsable: ['cremy@hellolead.pro'],       // destinataire principal (À)
+					    chef: ['pbenateau@hellolead.pro']           // chef de département, copie
 					  }
 					};
 

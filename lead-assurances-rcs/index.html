@@ -482,10 +482,1071 @@ a.no-theme-style {
 		<div class="elementor-element elementor-element-50ff960a e-con-full e-flex e-con e-child" data-id="50ff960a" data-element_type="container">
 				<div class="elementor-element elementor-element-1682fc78 elementor-widget elementor-widget-html" data-id="1682fc78" data-element_type="widget" data-widget_type="html.default">
 				<div class="elementor-widget-container">
-					<!-- Début de widget en ligne Calendly -->
-<div class="calendly-inline-widget" data-url="https://calendly.com/cremy-hellolead/votre-plan-de-leads-personnalises-hellolead?hide_event_type_details=1&amp;hide_gdpr_banner=1%22" data-resize="true" style="width:100%; min-width:320px; height:700px;"></div>
-<script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
-<!-- Fin de widget en ligne Calendly -->				</div>
+										<!-- Formulaire de lead HelloLead – 2 étapes (remplace le widget Calendly inline).
+					     Étape 1 : volume de leads / mois · Étape 2 : coordonnées + besoins + volume + CTA Calendly.
+					     Configuration : attribut data-endpoint sur .hl-lead-form (URL recevant un POST JSON du lead).
+					     Sans endpoint, le lead est uniquement poussé dans dataLayer (event "hl_lead_form_submit")
+					     et diffusé via l'événement DOM "hl:lead-form:submit". -->
+					<style>
+					/* =====================================================================
+					   Formulaire de lead Hellodevis – 2 étapes (volume -> coordonnées)
+					   Remplace le widget Calendly sur les pages lead-*
+					   ===================================================================== */
+					.hl-lead-form {
+					  --hl-red: #eb5846;
+					  --hl-red-dark: #d8432f;
+					  --hl-navy: #003366;
+					  --hl-ink: #1f2023;
+					  --hl-text: #2f3033;
+					  --hl-muted: #6b7280;
+					  --hl-border: #d9dee5;
+					  --hl-border-soft: #ececec;
+					  --hl-focus: #1a73e8;
+					  width: 100%;
+					  max-width: 620px;
+					  margin: 0 auto;
+					  font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+					  color: var(--hl-text);
+					  line-height: 1.45;
+					  text-align: left;
+					  -webkit-font-smoothing: antialiased;
+					}
+
+					.hl-lead-form *,
+					.hl-lead-form *::before,
+					.hl-lead-form *::after { box-sizing: border-box; }
+
+					.hl-lead-form [hidden] { display: none !important; }
+
+					.hl-lead-form p { margin: 0; }
+
+					.hl-lead-form .hl-lf-sr-only {
+					  position: absolute !important;
+					  width: 1px; height: 1px;
+					  padding: 0; margin: -1px;
+					  overflow: hidden;
+					  clip: rect(0 0 0 0);
+					  white-space: nowrap;
+					  border: 0;
+					}
+
+					/* ---------- Carte ---------- */
+					.hl-lead-form .hl-lf-card {
+					  background: #fff;
+					  border: 1px solid var(--hl-border-soft);
+					  border-radius: 18px;
+					  padding: 28px 30px 26px;
+					  box-shadow: 0 12px 34px rgba(16, 24, 40, 0.07);
+					}
+
+					.hl-lead-form .hl-lf-head { margin: 0 0 20px; }
+
+					.hl-lead-form .hl-lf-title {
+					  margin: 0 0 8px;
+					  font-family: inherit;
+					  font-size: 18px;
+					  line-height: 1.3;
+					  font-weight: 800;
+					  letter-spacing: 0.05em;
+					  text-transform: uppercase;
+					  color: #14171a;
+					}
+
+					.hl-lead-form .hl-lf-subtitle {
+					  margin: 0;
+					  font-size: 15px;
+					  line-height: 1.45;
+					  color: var(--hl-text);
+					}
+
+					/* ---------- Progression ---------- */
+					.hl-lead-form .hl-lf-progress {
+					  display: flex;
+					  align-items: center;
+					  gap: 10px;
+					  margin: 16px 0 22px;
+					}
+
+					.hl-lead-form .hl-lf-progress__bar {
+					  position: relative;
+					  flex: 1 1 auto;
+					  height: 6px;
+					  border-radius: 999px;
+					  background: #eef0f3;
+					  overflow: hidden;
+					}
+
+					.hl-lead-form .hl-lf-progress__fill {
+					  position: absolute;
+					  top: 0; bottom: 0; left: 0;
+					  width: 50%;
+					  border-radius: 999px;
+					  background: var(--hl-red);
+					  transition: width 0.3s ease;
+					}
+
+					.hl-lead-form .hl-lf-progress__label {
+					  flex: 0 0 auto;
+					  font-size: 12px;
+					  font-weight: 600;
+					  color: var(--hl-muted);
+					  white-space: nowrap;
+					}
+
+					/* ---------- Champs ---------- */
+					.hl-lead-form .hl-lf-field { margin: 0 0 15px; }
+
+					.hl-lead-form .hl-lf-label, .hl-lead-form .hl-lf-legend {
+					  display: block;
+					  margin: 0 0 8px;
+					  padding: 0;
+					  font-family: inherit;
+					  font-size: 15.5px;
+					  line-height: 1.35;
+					  font-weight: 700;
+					  color: #14171a;
+					}
+
+					.hl-lead-form .hl-lf-req { color: var(--hl-red); font-weight: 700; }
+
+					.hl-lead-form .hl-lf-input {
+					  display: block;
+					  width: 100%;
+					  height: 46px;
+					  padding: 0 14px;
+					  border: 1px solid var(--hl-border);
+					  border-radius: 9px;
+					  background: #fff;
+					  color: var(--hl-ink);
+					  font-family: inherit;
+					  font-size: 16px;
+					  line-height: 1.2;
+					  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+					  appearance: none;
+					  -webkit-appearance: none;
+					}
+
+					.hl-lead-form .hl-lf-input::placeholder { color: #9aa3ad; opacity: 1; }
+
+					.hl-lead-form .hl-lf-input:focus {
+					  outline: 0;
+					  border-color: var(--hl-focus);
+					  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.16);
+					}
+
+					.hl-lead-form .hl-lf-field.is-invalid .hl-lf-input, .hl-lead-form .hl-lf-field.is-invalid .hl-lf-select__trigger, .hl-lead-form .hl-lf-field.is-invalid .hl-lf-select2 {
+					  border-color: #d93a2b;
+					}
+
+					.hl-lead-form .hl-lf-field.is-invalid .hl-lf-input:focus, .hl-lead-form .hl-lf-field.is-invalid .hl-lf-select__trigger:focus-visible {
+					  box-shadow: 0 0 0 3px rgba(217, 58, 43, 0.16);
+					}
+
+					.hl-lead-form .hl-lf-error {
+					  display: flex;
+					  align-items: flex-start;
+					  gap: 6px;
+					  margin: 7px 0 0;
+					  font-size: 12.5px;
+					  line-height: 1.35;
+					  font-weight: 600;
+					  color: #c0251a;
+					}
+
+					/* ---------- Select custom (étape 1) ---------- */
+					.hl-lead-form .hl-lf-select { position: relative; }
+
+					.hl-lead-form .hl-lf-select__trigger {
+					  display: flex;
+					  align-items: center;
+					  justify-content: space-between;
+					  gap: 12px;
+					  width: 100%;
+					  min-height: 48px;
+					  padding: 0 14px 0 16px;
+					  border: 1px solid var(--hl-border);
+					  border-radius: 9px;
+					  background: #fff;
+					  font-family: inherit;
+					  font-size: 16px;
+					  line-height: 1.2;
+					  color: #48505c;
+					  text-align: left;
+					  cursor: pointer;
+					  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+					}
+
+					.hl-lead-form .hl-lf-select__trigger:hover { border-color: #b9c1cc; }
+
+					.hl-lead-form .hl-lf-select__trigger:focus { outline: 0; }
+
+					.hl-lead-form .hl-lf-select__trigger:focus-visible, .hl-lead-form .hl-lf-select.is-open .hl-lf-select__trigger {
+					  border-color: var(--hl-focus);
+					  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.16);
+					}
+
+					.hl-lead-form .hl-lf-select .hl-lf-select__value {
+					  overflow: hidden;
+					  white-space: nowrap;
+					  text-overflow: ellipsis;
+					  color: #48505c;
+					}
+
+					.hl-lead-form .hl-lf-select.is-filled .hl-lf-select__value { color: var(--hl-ink); font-weight: 600; }
+
+					.hl-lead-form .hl-lf-select__chevron {
+					  flex: 0 0 auto;
+					  width: 18px;
+					  height: 18px;
+					  color: #3d4653;
+					  transition: transform 0.2s ease;
+					}
+
+					.hl-lead-form .hl-lf-select.is-open .hl-lf-select__chevron { transform: rotate(180deg); }
+
+					.hl-lead-form .hl-lf-select__list {
+					  position: absolute;
+					  z-index: 40;
+					  top: calc(100% + 6px);
+					  left: 0;
+					  right: 0;
+					  max-height: 260px;
+					  margin: 0;
+					  padding: 6px;
+					  overflow: auto;
+					  list-style: none;
+					  background: #fff;
+					  border: 1px solid #e6e8eb;
+					  border-radius: 10px;
+					  box-shadow: 0 18px 40px rgba(16, 24, 40, 0.16);
+					}
+
+					.hl-lead-form .hl-lf-select__option {
+					  padding: 11px 12px;
+					  border-radius: 7px;
+					  font-size: 15.5px;
+					  line-height: 1.3;
+					  color: var(--hl-text);
+					  cursor: pointer;
+					}
+
+					.hl-lead-form .hl-lf-select__option.is-active { background: #f3f6fa; }
+
+					.hl-lead-form .hl-lf-select__option[aria-selected="true"] {
+					  color: var(--hl-navy);
+					  font-weight: 700;
+					}
+
+					/* ---------- Select natif (étape 2) ---------- */
+					.hl-lead-form .hl-lf-native { position: relative; }
+
+					.hl-lead-form .hl-lf-select2 {
+					  display: block;
+					  width: 100%;
+					  height: 46px;
+					  padding: 0 42px 0 14px;
+					  border: 1px solid var(--hl-border);
+					  border-radius: 9px;
+					  background: #fff;
+					  color: var(--hl-ink);
+					  font-family: inherit;
+					  font-size: 16px;
+					  line-height: 1.2;
+					  cursor: pointer;
+					  appearance: none;
+					  -webkit-appearance: none;
+					  -moz-appearance: none;
+					  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+					}
+
+					.hl-lead-form .hl-lf-select2:focus {
+					  outline: 0;
+					  border-color: var(--hl-focus);
+					  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.16);
+					}
+
+					.hl-lead-form .hl-lf-native__chevron {
+					  position: absolute;
+					  top: 50%;
+					  right: 14px;
+					  width: 18px;
+					  height: 18px;
+					  margin-top: -9px;
+					  color: #3d4653;
+					  pointer-events: none;
+					}
+
+					/* ---------- Cases à cocher ---------- */
+					.hl-lead-form .hl-lf-checks {
+					  margin: 0 0 20px;
+					  padding: 0;
+					  border: 0;
+					}
+
+					.hl-lead-form .hl-lf-check {
+					  display: flex;
+					  align-items: flex-start;
+					  gap: 10px;
+					  margin: 0 0 11px;
+					  font-size: 15px;
+					  line-height: 1.4;
+					  color: var(--hl-text);
+					  cursor: pointer;
+					}
+
+					.hl-lead-form .hl-lf-check:last-of-type { margin-bottom: 0; }
+
+					.hl-lead-form .hl-lf-check input {
+					  flex: 0 0 auto;
+					  width: 17px;
+					  height: 17px;
+					  margin: 1px 0 0;
+					  accent-color: var(--hl-red);
+					  cursor: pointer;
+					}
+
+					/* ---------- Boutons ---------- */
+					.hl-lead-form .hl-lf-btn {
+					  display: flex;
+					  align-items: center;
+					  justify-content: center;
+					  width: 100%;
+					  min-height: 52px;
+					  margin: 4px 0 0;
+					  padding: 14px 20px;
+					  border: 0;
+					  border-radius: 9px;
+					  background: var(--hl-red);
+					  color: #fff;
+					  font-family: inherit;
+					  font-size: 16px;
+					  font-weight: 700;
+					  line-height: 1.2;
+					  text-align: center;
+					  text-decoration: none;
+					  cursor: pointer;
+					  transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+					  box-shadow: 0 6px 18px rgba(235, 88, 70, 0.24);
+					}
+
+					.hl-lead-form .hl-lf-btn:hover { background: var(--hl-red-dark); color: #fff; }
+
+					.hl-lead-form .hl-lf-btn:focus-visible {
+					  outline: 0;
+					  box-shadow: 0 0 0 3px rgba(235, 88, 70, 0.35);
+					}
+
+					.hl-lead-form .hl-lf-btn[disabled] { opacity: 0.65; cursor: not-allowed; }
+
+					.hl-lead-form .hl-lf-back {
+					  display: flex;
+					  align-items: center;
+					  justify-content: center;
+					  gap: 6px;
+					  width: 100%;
+					  margin: 14px 0 0;
+					  padding: 0;
+					  border: 0;
+					  background: none;
+					  font-family: inherit;
+					  font-size: 13.5px;
+					  font-weight: 600;
+					  color: var(--hl-muted);
+					  cursor: pointer;
+					}
+
+					.hl-lead-form .hl-lf-back:hover { color: var(--hl-navy); }
+
+					/* ---------- Confirmation ---------- */
+					.hl-lead-form .hl-lf-success { padding: 8px 0 4px; text-align: center; }
+
+					.hl-lead-form .hl-lf-success__icon {
+					  display: flex;
+					  align-items: center;
+					  justify-content: center;
+					  width: 56px;
+					  height: 56px;
+					  margin: 0 auto 16px;
+					  border-radius: 50%;
+					  background: rgba(235, 88, 70, 0.1);
+					  color: var(--hl-red);
+					}
+
+					.hl-lead-form .hl-lf-success__icon svg { width: 28px; height: 28px; }
+
+					.hl-lead-form .hl-lf-success__title {
+					  margin: 0 0 8px;
+					  font-size: 18px;
+					  font-weight: 800;
+					  line-height: 1.3;
+					  color: #14171a;
+					}
+
+					.hl-lead-form .hl-lf-success__text {
+					  margin: 0 0 18px;
+					  font-size: 14.5px;
+					  line-height: 1.5;
+					  color: #4b5563;
+					}
+
+					/* ---------- Responsive ---------- */
+					@media (max-width: 767px) {
+					  .hl-lead-form { max-width: 100%; }
+
+					  .hl-lead-form .hl-lf-card {
+					    padding: 22px 20px 20px;
+					    border-radius: 16px;
+					  }
+
+					  .hl-lead-form .hl-lf-title { font-size: 15.5px; }
+					  .hl-lead-form .hl-lf-subtitle { font-size: 14.5px; }
+
+					  .hl-lead-form .hl-lf-input, .hl-lead-form .hl-lf-select2, .hl-lead-form .hl-lf-select__trigger { font-size: 16px; }
+
+					  .hl-lead-form .hl-lf-btn { font-size: 15px; min-height: 50px; }
+					}
+
+					@media (prefers-reduced-motion: reduce) {
+					  .hl-lead-form *, .hl-lead-form *::before, .hl-lead-form *::after {
+					    transition-duration: 0.001ms !important;
+					    animation-duration: 0.001ms !important;
+					  }
+					}
+
+					</style>
+
+					<div class="hl-lead-form" data-hl-form="lead-assurances-rcs" data-calendly-url="https://calendly.com/cremy-hellolead/votre-plan-de-leads-personnalises-hellolead?hide_event_type_details=1&amp;hide_gdpr_banner=1" data-endpoint="">
+						<div class="hl-lf-card">
+							<div class="hl-lf-head">
+								<h2 class="hl-lf-title">Planifier un échange</h2>
+								<p class="hl-lf-subtitle">Présentez-nous vos objectifs.</p>
+								<div class="hl-lf-progress">
+									<span class="hl-lf-progress__bar" aria-hidden="true"><span class="hl-lf-progress__fill"></span></span>
+									<span class="hl-lf-progress__label" data-hl-step-label role="status" aria-live="polite">Étape 1 sur 2</span>
+								</div>
+							</div>
+							<form class="hl-lf-form" novalidate>
+								<div class="hl-lf-step" data-hl-step="1">
+									<div class="hl-lf-field">
+										<span class="hl-lf-label" id="hl-lf-volume-label-assurances-rcs">Volume de leads / mois <span class="hl-lf-req">*</span></span>
+										<div class="hl-lf-select" data-hl-select>
+											<button type="button" class="hl-lf-select__trigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="hl-lf-volume-label-assurances-rcs">
+												<span class="hl-lf-select__value" data-hl-value data-placeholder="Sélectionnez...">Sélectionnez...</span>
+												<svg class="hl-lf-select__chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7.5 10 12.5 15 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+											</button>
+											<ul class="hl-lf-select__list" id="hl-lf-volume-list-assurances-rcs" role="listbox" aria-labelledby="hl-lf-volume-label-assurances-rcs" tabindex="-1" hidden>
+									<li class="hl-lf-select__option" id="hl-lf-volume-assurances-rcs-1" role="option" data-value="Moins de 100" aria-selected="false">Moins de 100</li>
+									<li class="hl-lf-select__option" id="hl-lf-volume-assurances-rcs-2" role="option" data-value="100 à 500" aria-selected="false">100 à 500</li>
+									<li class="hl-lf-select__option" id="hl-lf-volume-assurances-rcs-3" role="option" data-value="500 à 1000" aria-selected="false">500 à 1000</li>
+									<li class="hl-lf-select__option" id="hl-lf-volume-assurances-rcs-4" role="option" data-value="Plus de 1000" aria-selected="false">Plus de 1000</li>
+											</ul>
+											<input type="hidden" name="volume" value="">
+										</div>
+										<p class="hl-lf-error" role="alert" hidden>Merci de sélectionner un volume de leads.</p>
+									</div>
+									<button type="button" class="hl-lf-btn" data-hl-next>Suivant</button>
+								</div>
+								<div class="hl-lf-step" data-hl-step="2" hidden>
+									<div class="hl-lf-field">
+										<label class="hl-lf-sr-only" for="hl-lf-tel-assurances-rcs">Téléphone (obligatoire)</label>
+										<input class="hl-lf-input" id="hl-lf-tel-assurances-rcs" name="telephone" type="tel" inputmode="tel" autocomplete="tel" spellcheck="false" placeholder="Téléphone*" aria-required="true">
+										<p class="hl-lf-error" role="alert" hidden>Merci d’indiquer un numéro de téléphone valide.</p>
+									</div>
+									<div class="hl-lf-field">
+										<label class="hl-lf-sr-only" for="hl-lf-cp-assurances-rcs">Code postal (obligatoire)</label>
+										<input class="hl-lf-input" id="hl-lf-cp-assurances-rcs" name="code_postal" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5" placeholder="Code postal*" aria-required="true">
+										<p class="hl-lf-error" role="alert" hidden>Merci d’indiquer un code postal à 5 chiffres.</p>
+									</div>
+									<div class="hl-lf-field">
+										<label class="hl-lf-sr-only" for="hl-lf-ste-assurances-rcs">Société (obligatoire)</label>
+										<input class="hl-lf-input" id="hl-lf-ste-assurances-rcs" name="societe" type="text" autocomplete="organization" placeholder="Société*" aria-required="true">
+										<p class="hl-lf-error" role="alert" hidden>Merci d’indiquer le nom de votre société.</p>
+									</div>
+									<fieldset class="hl-lf-checks">
+										<legend class="hl-lf-legend">Votre besoin :</legend>
+									<label class="hl-lf-check">
+										<input type="checkbox" name="besoins" value="Assurances professionnelles I.A.R.D" id="hl-lf-need-assurances-rcs-1">
+										<span>Assurances professionnelles I.A.R.D</span>
+									</label>
+									<label class="hl-lf-check">
+										<input type="checkbox" name="besoins" value="Assurances protection sociale Individuelle" id="hl-lf-need-assurances-rcs-2">
+										<span>Assurances protection sociale Individuelle</span>
+									</label>
+									<label class="hl-lf-check">
+										<input type="checkbox" name="besoins" value="Assurances Protection sociale Collective" id="hl-lf-need-assurances-rcs-3">
+										<span>Assurances Protection sociale Collective</span>
+									</label>
+									<label class="hl-lf-check">
+										<input type="checkbox" name="besoins" value="Gestion de Patrimoine" id="hl-lf-need-assurances-rcs-4">
+										<span>Gestion de Patrimoine</span>
+									</label>
+									<label class="hl-lf-check">
+										<input type="checkbox" name="besoins" value="Autres types d'assurances B2B" id="hl-lf-need-assurances-rcs-5">
+										<span>Autres types d'assurances B2B</span>
+									</label>
+									<label class="hl-lf-check">
+										<input type="checkbox" name="besoins" value="Autres types d'assurances B2C" id="hl-lf-need-assurances-rcs-6">
+										<span>Autres types d'assurances B2C</span>
+									</label>
+									</fieldset>
+									<div class="hl-lf-field">
+										<label class="hl-lf-label" for="hl-lf-volume2-assurances-rcs">Volume de leads souhaité / mois :</label>
+										<div class="hl-lf-native">
+											<select class="hl-lf-select2" id="hl-lf-volume2-assurances-rcs" name="volume_souhaite" aria-required="true">
+												<option value="">Sélectionnez...</option>
+									<option value="Moins de 100">Moins de 100</option>
+									<option value="100 à 500">100 à 500</option>
+									<option value="500 à 1000">500 à 1000</option>
+									<option value="Plus de 1000">Plus de 1000</option>
+											</select>
+											<svg class="hl-lf-native__chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 7.5 10 12.5 15 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+										</div>
+										<p class="hl-lf-error" role="alert" hidden>Merci de sélectionner un volume de leads.</p>
+									</div>
+									<button type="submit" class="hl-lf-btn">Choisir un créneau sur Calendly</button>
+									<button type="button" class="hl-lf-back" data-hl-back><span aria-hidden="true">←</span> Retour</button>
+								</div>
+								<div class="hl-lf-success" hidden>
+									<div class="hl-lf-success__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+									<p class="hl-lf-success__title" role="status">Merci, votre demande est enregistrée</p>
+									<p class="hl-lf-success__text">Choisissez maintenant le créneau qui vous convient : le calendrier s’ouvre dans un nouvel onglet.</p>
+									<a class="hl-lf-btn" href="https://calendly.com/cremy-hellolead/votre-plan-de-leads-personnalises-hellolead?hide_event_type_details=1&amp;hide_gdpr_banner=1" target="_blank" rel="noopener" data-hl-calendly-link>Choisir un créneau sur Calendly</a>
+								</div>
+							</form>
+						</div>
+					</div>
+
+					<script>
+					/* =====================================================================
+					   Formulaire de lead Hellodevis – 2 étapes
+					   - Étape 1 : volume de leads souhaité (select custom)
+					   - Étape 2 : coordonnées + besoins + volume confirmé + CTA Calendly
+					   Aucune dépendance (pas de jQuery).
+					   ===================================================================== */
+					(function () {
+					  'use strict';
+
+					  var ROOT_SELECTOR = '.hl-lead-form';
+
+					  function toArray(list) { return Array.prototype.slice.call(list || []); }
+					  function $(selector, context) { return (context || document).querySelector(selector); }
+					  function $$(selector, context) { return toArray((context || document).querySelectorAll(selector)); }
+
+					  function isValidPhone(raw) {
+					    var value = String(raw == null ? '' : raw).trim();
+					    if (value.length < 6) { return false; }
+					    var compact = value.replace(/[^\d+]/g, '');
+					    if (/^0[1-9]\d{8}$/.test(compact)) { return true; }
+					    var international = compact.replace(/^\+/, '').replace(/^00/, '');
+					    if (/^33[1-9]\d{8}$/.test(international)) { return true; }
+					    if ((/^\+/.test(compact) || /^00/.test(compact)) && /^[1-9]\d{7,14}$/.test(international)) { return true; }
+					    return false;
+					  }
+
+					  function formatFrenchPhone(raw) {
+					    var value = String(raw == null ? '' : raw).trim();
+					    var compact = value.replace(/[\s.\-()]/g, '');
+					    if (/^0\d{9}$/.test(compact)) {
+					      return compact.replace(/(\d{2})(?=\d)/g, '$1 ');
+					    }
+					    return value;
+					  }
+
+					  function isValidPostalCode(raw) {
+					    return /^\d{5}$/.test(String(raw == null ? '' : raw).trim());
+					  }
+
+					  /* ------------------------------------------------------------------
+					     Select personnalisé (étape 1)
+					     ------------------------------------------------------------------ */
+					  function initSelect(select) {
+					    if (!select || select.dataset.hlReady === 'true') { return; }
+					    select.dataset.hlReady = 'true';
+
+					    var trigger = $('.hl-lf-select__trigger', select);
+					    var list = $('.hl-lf-select__list', select);
+					    var input = $('input[type="hidden"]', select);
+					    var valueEl = $('[data-hl-value]', select);
+					    var options = $$('[role="option"]', list);
+					    var activeIndex = -1;
+
+					    if (!trigger || !list || !input || !valueEl || !options.length) { return; }
+
+					    var placeholder = valueEl.getAttribute('data-placeholder') || valueEl.textContent.trim();
+
+					    function isOpen() { return select.classList.contains('is-open'); }
+
+					    function setActive(index, shouldScroll) {
+					      if (activeIndex > -1 && options[activeIndex]) {
+					        options[activeIndex].classList.remove('is-active');
+					      }
+					      activeIndex = index;
+					      if (activeIndex > -1 && options[activeIndex]) {
+					        options[activeIndex].classList.add('is-active');
+					        if (options[activeIndex].id) {
+					          trigger.setAttribute('aria-activedescendant', options[activeIndex].id);
+					        }
+					        if (shouldScroll && options[activeIndex].scrollIntoView) {
+					          options[activeIndex].scrollIntoView({ block: 'nearest' });
+					        }
+					      } else {
+					        trigger.removeAttribute('aria-activedescendant');
+					      }
+					    }
+
+					    function open() {
+					      $$('.hl-lf-select.is-open').forEach(function (other) {
+					        if (other !== select && typeof other.hlClose === 'function') { other.hlClose(); }
+					      });
+					      list.hidden = false;
+					      select.classList.add('is-open');
+					      trigger.setAttribute('aria-expanded', 'true');
+					      var selected = options.indexOf(select.hlSelectedOption);
+					      setActive(selected > -1 ? selected : 0, true);
+					    }
+
+					    function close(returnFocus) {
+					      list.hidden = true;
+					      select.classList.remove('is-open');
+					      trigger.setAttribute('aria-expanded', 'false');
+					      setActive(-1);
+					      if (returnFocus) { trigger.focus(); }
+					    }
+
+					    function choose(option) {
+					      options.forEach(function (item) {
+					        item.setAttribute('aria-selected', item === option ? 'true' : 'false');
+					      });
+					      select.hlSelectedOption = option;
+					      var value = option.getAttribute('data-value');
+					      input.value = value;
+					      valueEl.textContent = option.textContent.trim();
+					      select.classList.add('is-filled');
+					      close(true);
+					      input.dispatchEvent(new Event('change', { bubbles: true }));
+					    }
+
+					    select.hlClose = function () { close(false); };
+					    select.hlSelect = {
+					      get: function () { return input.value; },
+					      set: function (value) {
+					        var match = null;
+					        options.forEach(function (option) {
+					          option.setAttribute('aria-selected', option.getAttribute('data-value') === value ? 'true' : 'false');
+					          if (option.getAttribute('data-value') === value) { match = option; }
+					        });
+					        select.hlSelectedOption = match;
+					        if (match) {
+					          input.value = value;
+					          valueEl.textContent = match.textContent.trim();
+					          select.classList.add('is-filled');
+					        } else {
+					          input.value = '';
+					          valueEl.textContent = placeholder;
+					          select.classList.remove('is-filled');
+					        }
+					      },
+					      focus: function () { trigger.focus(); }
+					    };
+
+					    trigger.addEventListener('click', function () {
+					      if (isOpen()) { close(true); } else { open(); }
+					    });
+
+					    trigger.addEventListener('keydown', function (event) {
+					      var key = event.key;
+					      if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Enter' || key === ' ' || key === 'Spacebar') {
+					        if (!isOpen()) {
+					          event.preventDefault();
+					          open();
+					          return;
+					        }
+					      }
+					      if (!isOpen()) { return; }
+
+					      if (key === 'ArrowDown') {
+					        event.preventDefault();
+					        setActive(Math.min(activeIndex + 1, options.length - 1), true);
+					      } else if (key === 'ArrowUp') {
+					        event.preventDefault();
+					        setActive(Math.max(activeIndex - 1, 0), true);
+					      } else if (key === 'Home') {
+					        event.preventDefault();
+					        setActive(0, true);
+					      } else if (key === 'End') {
+					        event.preventDefault();
+					        setActive(options.length - 1, true);
+					      } else if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+					        event.preventDefault();
+					        event.stopPropagation();
+					        if (options[activeIndex]) { choose(options[activeIndex]); }
+					      } else if (key === 'Escape' || key === 'Esc') {
+					        event.preventDefault();
+					        close(true);
+					      } else if (key === 'Tab') {
+					        close(false);
+					      }
+					    });
+
+					    options.forEach(function (option) {
+					      option.addEventListener('mouseenter', function () {
+					        setActive(options.indexOf(option), false);
+					      });
+					      option.addEventListener('click', function () { choose(option); });
+					    });
+
+					    document.addEventListener('pointerdown', function (event) {
+					      if (isOpen() && !select.contains(event.target)) { close(false); }
+					    });
+					  }
+
+					  /* ------------------------------------------------------------------
+					     Formulaire
+					     ------------------------------------------------------------------ */
+					  function initForm(root) {
+					    if (!root || root.dataset.hlReady === 'true') { return; }
+					    root.dataset.hlReady = 'true';
+
+					    var form = $('.hl-lf-form', root);
+					    if (!form) { return; }
+
+					    var steps = $$('[data-hl-step]', form);
+					    var fill = $('.hl-lf-progress__fill', root);
+					    var stepLabel = $('[data-hl-step-label]', root);
+					    var success = $('.hl-lf-success', root);
+					    var calendlyLink = $('[data-hl-calendly-link]', root);
+					    var calendlyUrl = root.getAttribute('data-calendly-url') || (calendlyLink ? calendlyLink.getAttribute('href') : '');
+					    var endpoint = root.getAttribute('data-endpoint') || '';
+					    var formName = root.getAttribute('data-hl-form') || 'lead';
+					    var current = 0;
+					    var submitted = false;
+
+					    var volumeSelectEl = $('[data-hl-select]', root);
+					    var volumeApi = volumeSelectEl ? volumeSelectEl.hlSelect : null;
+
+					    var phone = form.elements['telephone'];
+					    var postal = form.elements['code_postal'];
+					    var company = form.elements['societe'];
+					    var volume = form.elements['volume_souhaite'];
+
+					    var rules = [
+					      {
+					        el: phone,
+					        test: function () { return isValidPhone(phone.value); },
+					        message: 'Merci d’indiquer un numéro de téléphone valide.'
+					      },
+					      {
+					        el: postal,
+					        test: function () { return isValidPostalCode(postal.value); },
+					        message: 'Merci d’indiquer un code postal à 5 chiffres.'
+					      },
+					      {
+					        el: company,
+					        test: function () { return company.value.trim().length >= 2; },
+					        message: 'Merci d’indiquer le nom de votre société.'
+					      },
+					      {
+					        el: volume,
+					        test: function () { return !!volume.value; },
+					        message: 'Merci de sélectionner un volume de leads.'
+					      }
+					    ];
+
+					    function fieldOf(el) { return el ? el.closest('.hl-lf-field') : null; }
+
+					    function linkErrors() {
+					      $$('.hl-lf-error', form).forEach(function (error, index) {
+					        var field = error.closest('.hl-lf-field');
+					        if (!field) { return; }
+					        if (!error.id) { error.id = 'hl-lf-error-' + formName + '-' + index; }
+					        var control = $('input:not([type="hidden"]), select, .hl-lf-select__trigger', field);
+					        if (control && !control.getAttribute('aria-describedby')) {
+					          control.setAttribute('aria-describedby', error.id);
+					        }
+					      });
+					    }
+
+					    function setError(el, show, message) {
+					      var field = fieldOf(el);
+					      if (!el) { return; }
+					      el.setAttribute('aria-invalid', show ? 'true' : 'false');
+					      if (!field) { return; }
+					      field.classList.toggle('is-invalid', !!show);
+					      var error = $('.hl-lf-error', field);
+					      if (error) {
+					        if (message) { error.textContent = message; }
+					        error.hidden = !show;
+					      }
+					    }
+
+					    function clearError(el) { setError(el, false); }
+
+					    function firstFieldOf(step) {
+					      return $('input:not([type="hidden"]):not([disabled]), select:not([disabled]), .hl-lf-select__trigger', step);
+					    }
+
+					    function showStep(index, options) {
+					      var opts = options || {};
+					      current = Math.max(0, Math.min(index, steps.length - 1));
+					      steps.forEach(function (step, i) {
+					        step.hidden = i !== current;
+					      });
+					      if (fill) {
+					        fill.style.width = (((current + 1) / steps.length) * 100) + '%';
+					      }
+					      if (stepLabel) {
+					        stepLabel.textContent = 'Étape ' + (current + 1) + ' sur ' + steps.length;
+					      }
+					      if (opts.focus !== false) {
+					        var target = firstFieldOf(steps[current]);
+					        if (target && target.focus) { target.focus({ preventScroll: true }); }
+					      }
+					    }
+
+					    function validateStep1() {
+					      var value = volumeApi ? volumeApi.get() : '';
+					      var valid = !!value;
+					      if (volumeSelectEl) {
+					        var field = fieldOf(volumeSelectEl);
+					        if (field) {
+					          field.classList.toggle('is-invalid', !valid);
+					          var error = $('.hl-lf-error', field);
+					          if (error) { error.hidden = valid; }
+					        }
+					        var trigger = $('.hl-lf-select__trigger', volumeSelectEl);
+					        if (trigger) { trigger.setAttribute('aria-invalid', valid ? 'false' : 'true'); }
+					        if (!valid && volumeApi) { volumeApi.focus(); }
+					      }
+					      return valid;
+					    }
+
+					    function validateStep2() {
+					      var firstInvalid = null;
+					      rules.forEach(function (rule) {
+					        if (!rule.el) { return; }
+					        var valid = rule.test();
+					        setError(rule.el, !valid, rule.message);
+					        if (!valid && !firstInvalid) { firstInvalid = rule.el; }
+					      });
+					      if (firstInvalid) {
+					        if (firstInvalid.focus) { firstInvalid.focus({ preventScroll: true }); }
+					        if (firstInvalid.scrollIntoView) {
+					          firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					        }
+					      }
+					      return !firstInvalid;
+					    }
+
+					    function collect() {
+					      var data = {
+					        formulaire: formName,
+					        page: window.location.href,
+					        volume: volumeApi ? volumeApi.get() : (volume ? volume.value : ''),
+					        volume_souhaite: volume ? volume.value : '',
+					        telephone: phone ? phone.value.trim() : '',
+					        code_postal: postal ? postal.value.trim() : '',
+					        societe: company ? company.value.trim() : '',
+					        besoins: $$('input[name="besoins"]:checked', form).map(function (input) { return input.value; }),
+					        date: new Date().toISOString()
+					      };
+
+					      try {
+					        var params = new URLSearchParams(window.location.search);
+					        ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid'].forEach(function (key) {
+					          if (params.get(key)) { data[key] = params.get(key); }
+					        });
+					      } catch (error) { /* navigateurs anciens */ }
+
+					      return data;
+					    }
+
+					    function track(data) {
+					      try {
+					        window.dataLayer = window.dataLayer || [];
+					        window.dataLayer.push({
+					          event: 'hl_lead_form_submit',
+					          form: formName,
+					          volume: data.volume,
+					          besoins: data.besoins,
+					          page: window.location.pathname
+					        });
+					      } catch (error) { /* dataLayer indisponible */ }
+
+					      try {
+					        document.dispatchEvent(new CustomEvent('hl:lead-form:submit', { detail: data }));
+					      } catch (error) { /* CustomEvent indisponible */ }
+					    }
+
+					    function send(data) {
+					      if (!endpoint) {
+					        if (window.console && console.info) {
+					          console.info('[Hellodevis] Lead capté (mode démo, aucun endpoint configuré) :', data);
+					        }
+					        return;
+					      }
+					      try {
+					        window.fetch(endpoint, {
+					          method: 'POST',
+					          headers: { 'Content-Type': 'application/json' },
+					          body: JSON.stringify(data),
+					          keepalive: true
+					        }).then(function (response) {
+					          if (!response.ok) { throw new Error('HTTP ' + response.status); }
+					        }).catch(function (error) {
+					          if (window.console && console.warn) {
+					            console.warn('[Hellodevis] Envoi du lead impossible :', error);
+					          }
+					        });
+					      } catch (error) {
+					        if (window.console && console.warn) {
+					          console.warn('[Hellodevis] Envoi du lead impossible :', error);
+					        }
+					      }
+					    }
+
+					    function showSuccess() {
+					      submitted = true;
+					      steps.forEach(function (step) { step.hidden = true; });
+					      if (success) { success.hidden = false; }
+					      if (fill) { fill.style.width = '100%'; }
+					      if (stepLabel) { stepLabel.textContent = 'Demande envoyée'; }
+					      var focusTarget = success ? $('.hl-lf-success__title', success) : null;
+					      if (focusTarget && focusTarget.focus) {
+					        focusTarget.setAttribute('tabindex', '-1');
+					        focusTarget.focus({ preventScroll: true });
+					      }
+					    }
+
+					    function openCalendly() {
+					      if (!calendlyUrl) { return; }
+					      try {
+					        window.open(calendlyUrl, '_blank', 'noopener,noreferrer');
+					      } catch (error) {
+					        /* popup bloquée : le bouton de confirmation reste disponible */
+					      }
+					    }
+
+					    function submit(event) {
+					      if (event) { event.preventDefault(); }
+					      if (submitted) { return; }
+					      var step1Ok = validateStep1();
+					      if (!step1Ok) {
+					        showStep(0);
+					        return;
+					      }
+					      if (current !== steps.length - 1) { showStep(steps.length - 1); return; }
+					      if (!validateStep2()) { return; }
+
+					      var data = collect();
+					      openCalendly();
+					      send(data);
+					      track(data);
+					      showSuccess();
+					    }
+
+					    /* Synchronisation des deux selects de volume */
+					    if (volume && volumeApi) {
+					      volume.value = volumeApi.get();
+					      volumeSelectEl.addEventListener('change', function () {
+					        volume.value = volumeApi.get();
+					        clearError(volume);
+					        var trigger = $('.hl-lf-select__trigger', volumeSelectEl);
+					        if (trigger) { trigger.setAttribute('aria-invalid', 'false'); }
+					      });
+					      volume.addEventListener('change', function () {
+					        var api = volumeSelectEl.hlSelect;
+					        if (api && volume.value && api.get() !== volume.value) { api.set(volume.value); }
+					        clearError(volume);
+					      });
+					    }
+
+					    /* Nettoyage des erreurs à la saisie */
+					    [phone, postal, company].forEach(function (input) {
+					      if (!input) { return; }
+					      input.addEventListener('input', function () { clearError(input); });
+					      input.addEventListener('change', function () { clearError(input); });
+					    });
+
+					    if (postal) {
+					      postal.addEventListener('input', function () {
+					        var digits = postal.value.replace(/\D/g, '').slice(0, 5);
+					        if (digits !== postal.value) { postal.value = digits; }
+					      });
+					    }
+
+					    if (phone) {
+					      phone.addEventListener('input', function () {
+					        var cleaned = phone.value.replace(/[^0-9+().\s-]/g, '');
+					        if (cleaned.length > 24) { cleaned = cleaned.slice(0, 24); }
+					        if (cleaned !== phone.value) { phone.value = cleaned; }
+					      });
+					    }
+
+					    if (phone) {
+					      phone.addEventListener('blur', function () {
+					        if (!phone.value.trim()) { return; }
+					        var formatted = formatFrenchPhone(phone.value);
+					        if (formatted !== phone.value) { phone.value = formatted; }
+					      });
+					    }
+
+					    /* Navigation */
+					    $$('[data-hl-next]', root).forEach(function (button) {
+					      button.addEventListener('click', function () {
+					        if (!validateStep1()) { return; }
+					        showStep(current + 1);
+					      });
+					    });
+
+					    $$('[data-hl-back]', root).forEach(function (button) {
+					      button.addEventListener('click', function () { showStep(current - 1); });
+					    });
+
+					    /* Entrée sur l'étape 1 */
+					    if (steps[0]) {
+					      steps[0].addEventListener('keydown', function (event) {
+					        if (event.key !== 'Enter') { return; }
+					        if (select_is_open(volumeSelectEl)) { return; }
+					        if (event.target && event.target.closest && event.target.closest('.hl-lf-select')) { return; }
+					        event.preventDefault();
+					        if (validateStep1()) { showStep(current + 1); }
+					      });
+					    }
+
+					    function select_is_open(el) {
+					      return !!(el && el.classList.contains('is-open'));
+					    }
+
+					    form.addEventListener('submit', submit);
+
+					    if (calendlyUrl && calendlyLink && !calendlyLink.getAttribute('href')) {
+					      calendlyLink.setAttribute('href', calendlyUrl);
+					    }
+
+					    linkErrors();
+					    showStep(0, { focus: false });
+					    if (success) { success.hidden = true; }
+					  }
+
+					  function boot() {
+					    $$(ROOT_SELECTOR).forEach(function (root) {
+					      initSelect($('[data-hl-select]', root));
+					      initForm(root);
+					    });
+					  }
+
+					  var api = { init: boot };
+					  window.HLLeadForm = window.HLLeadForm || api;
+
+					  if (document.readyState === 'loading') {
+					    document.addEventListener('DOMContentLoaded', boot);
+					  } else {
+					    boot();
+					  }
+					})();
+
+					</script>
+				</div>
 				</div>
 				</div>
 					</div>

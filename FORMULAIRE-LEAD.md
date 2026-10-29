@@ -28,6 +28,8 @@ Visiteur ──► formulaire (2 étapes, validation, accessibilité)
 
       si le relais refuse (jeton, quota) ──► repli `formsubmit`, la demande n'est pas perdue
                  │
+                 ├──► Google Sheets « Leads HelloLead — suivi » : une ligne par prospect,
+                 │    partagée avec manajahelvin@gmail.com (suivi individuel)
                  ▼
 /boite-de-reception.html  →  copie locale des demandes et des e-mails générés
 ```
@@ -76,6 +78,27 @@ formulaire ; la boîte de réception locale en affiche le rendu exact.
 > garantit qu'il reçoit l'e-mail même si le responsable filtre ou redirige le
 > sien. `ccChef: true` ajoute en plus une copie sur le message du responsable —
 > inutile dans le cas nominal, donc `false`.
+
+### La feuille de suivi
+
+En plus des e-mails, **chaque demande valide crée une ligne** dans une feuille
+de calcul Google, partagée avec l'adresse de suivi :
+
+| | |
+|---|---|
+| Nom | « Leads HelloLead — suivi », onglet **Leads** |
+| Accès | `manajahelvin@gmail.com` (modification) — invitation Google à accepter une fois |
+| Contenu | date, référence, formulaire, nom, société, e-mail, téléphone, code postal, volume, besoins, page d'origine, UTM, `gclid`, `fbclid`, « Suivi par », statut des e-mails |
+| Une ligne par | demande (déduplication par référence) |
+| Si la feuille tombe | les e-mails partent quand même, le visiteur ne voit rien |
+
+Détail des colonnes, partage, purge RGPD (`purgerLeadsAnciens`) et dépannage :
+`production-gas/README.md`, § 4. L'URL de la feuille est aussi renvoyée par
+l'URL `/exec` (champ `sheet`).
+
+> **Mise à jour du script obligatoire** : l'écriture dans Sheets ajoute des
+> autorisations. Coller le nouveau `Code.gs`, lancer **Exécuter → `testFeuille`**
+> et accepter la demande de Google, puis redéployer une **nouvelle version**.
 
 ---
 
@@ -254,7 +277,9 @@ plafonne à 30 demandes/jour, le piège reste la première barrière.
 ### Point RGPD
 
 Avec `gas`, les données passent par Gmail/Google — déjà sous-traitant de la
-messagerie — et par aucun intermédiaire supplémentaire. Avec `emailjs`, un
+messagerie — et restent chez Google : la feuille de suivi est un fichier du même
+compte, partagé avec l'adresse de suivi, soumis à la même politique de
+conservation (purge à 180 jours). Avec `emailjs`, un
 second sous-traitant s'ajoute. Dans les deux cas : finalité (réponse à une
 demande commerciale) et durée de conservation à documenter dans la politique de
 confidentialité. La copie locale (§ 7) reste dans le navigateur du poste et
@@ -349,6 +374,11 @@ remplace.
 - [ ] `FROM_ADDRESS` laissé vide, ou renseigné avec un alias Gmail vérifié
       (§ 3 bis) — redéployer une nouvelle version dans ce second cas.
 - [ ] Repli FormSubmit activé une fois (lien d'activation reçu par e-mail).
+- [ ] Script mis à jour et **réautorisé** (Sheets + Drive), nouvelle version déployée.
+- [ ] `testFeuille` a créé la feuille et l'invitation Google a été acceptée par
+      `manajahelvin@gmail.com`.
+- [ ] Une demande test apparaît bien dans la feuille (une ligne, colonnes remplies).
+- [ ] Purge RGPD programmée (`purgerLeadsAnciens`, 180 jours).
 - [ ] `boite-de-reception.html` **non publiée**.
 - [ ] Politique de confidentialité à jour (Gmail/Google, finalité, durée).
 - [ ] `robots.txt` / `noindex` conservés sur la boîte locale.

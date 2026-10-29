@@ -1848,6 +1848,24 @@ a.no-theme-style {
 				      from_name: CONFIG.senderName || 'HelloLead',
 				      form: FORM_CFG.label || data.formulaire,
 				      lead_id: data.lead_id,
+
+				      // Fiche complète du prospect : le script en fait une ligne de la
+				      // feuille de suivi Google (production-gas/Code.gs).
+				      lead: {
+				        formulaire: FORM_CFG.label || data.formulaire,
+				        nom: data.nom,
+				        email: data.email,
+				        telephone: data.telephone,
+				        code_postal: data.code_postal,
+				        societe: data.societe,
+				        volume: data.volume,
+				        besoins: data.besoins,
+				        page: data.page,
+				        utm: data.utm,
+				        lead_id: data.lead_id,
+				        recu_le: new Date().toISOString()
+				      },
+
 				      messages: [
 				        {
 				          role: 'responsable',

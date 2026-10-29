@@ -20,21 +20,11 @@
  *         "subject": "…", "html": "…", "text": "…" },
  *       { "role": "chef",   … },
  *       { "role": "client", … }
- *     ],
- *     "lead": {                           // données complètes du prospect
- *       "formulaire": "Assurances pro", "nom": "…", "email": "…",
- *       "telephone": "…", "code_postal": "…", "societe": "…",
- *       "volume": "100 à 500 leads / mois", "besoins": ["…"],
- *       "page": "https://…", "utm": { … }, "lead_id": "hl-…"
- *     }
+ *     ]
  *   }
  *
- * Chaque demande est aussi inscrite dans une **feuille de calcul Google**
- * (une ligne par prospect), partagée avec SHEET_EMAIL pour le suivi.
- *
  * Réponse (toujours HTTP 200, JSON) :
- *   { "ok": true,  "sent": { "responsable": true, "chef": true, "client": true },
- *     "sheet": { "ok": true, "url": "https://docs.google.com/…" } }
+ *   { "ok": true,  "sent": { "responsable": true, "chef": true, "client": true } }
  *   { "ok": false, "error": "token" | "invalid" | "quota", "sent": { … } }
  *
  * Le formulaire interprète « token » et « quota » comme un refus sûr (aucun
@@ -70,43 +60,6 @@ var MAX_LEADS_PER_DAY = 30;
 
 // Taille maximale d'un message (garde-fou anti-abus), en caractères.
 var MAX_MESSAGE_CHARS = 120000;
-
-/* --------------------------------------------------------------------------
-   Feuille de suivi
-   -------------------------------------------------------------------------- */
-
-// Adresse qui reçoit l'accès à la feuille (suivi individuel des prospects).
-// Elle est aussi inscrite dans la colonne « Suivi par ».
-var SHEET_EMAIL = 'manajahelvin@gmail.com';
-
-// Nom donné à la feuille si le script doit la créer.
-var SHEET_TITLE = 'Leads HelloLead — suivi';
-
-// Onglet utilisé (créé s'il n'existe pas).
-var SHEET_TAB = 'Leads';
-
-// Colonnes écrites, dans cet ordre. Toute modification ici doit rester
-// alignée avec buildRow_() plus bas.
-var SHEET_COLUMNS = [
-  'Reçue le',
-  'Référence',
-  'Formulaire',
-  'Nom et prénom',
-  'Société',
-  'E-mail',
-  'Téléphone',
-  'Code postal',
-  'Volume souhaité',
-  'Besoins',
-  'Page d\'origine',
-  'UTM source',
-  'UTM support',
-  'UTM campagne',
-  'gclid',
-  'fbclid',
-  'Suivi par',
-  'E-mails'
-];
 
 /* --------------------------------------------------------------------------
    2. Points d'entrée
@@ -179,13 +132,9 @@ function doPost(e) {
     countToday_();
   }
 
-  // Inscription dans la feuille de suivi. Un échec ici ne doit jamais faire
-  // échouer la demande : les e-mails sont partis, la ligne est un confort.
-  var sheet = appendLead_(body, sent);
-
   // Sans le message au responsable, la demande serait perdue côté équipe :
   // la page doit le savoir pour proposer une solution de repli.
-  return reply_({ ok: sent.responsable !== false, sent: sent, sheet: sheet });
+  return reply_({ ok: sent.responsable !== false, sent: sent });
 }
 
 /**
@@ -197,7 +146,6 @@ function doGet() {
     service: 'HelloLead',
     ready: TOKEN.indexOf('REMPLACER') !== 0 && TOKEN.length >= 20,
     from: FROM_ADDRESS || account_(),
-    sheet: sheetUrl_(),
     remaining: remainingQuota_()
   });
 }
@@ -230,288 +178,8 @@ function testEnvoi() {
   return result;
 }
 
-/**
- * Test de la feuille seule, sans envoyer d'e-mail (Exécuter → testFeuille).
- * Crée la feuille si besoin, puis y ajoute une ligne de démonstration.
- */
-function testFeuille() {
-  var result = appendLead_({
-    form: 'Assurances pro',
-    lead_id: 'test-feuille-' + Date.now(),
-    lead: {
-      formulaire: 'Assurances pro',
-      nom: 'Test Feuille',
-      email: 'test@exemple.fr',
-      telephone: '0600000000',
-      code_postal: '75001',
-      societe: 'Société de test',
-      volume: '100 à 500 leads / mois',
-      besoins: ['Assurance I.A.R.D'],
-      page: 'https://www.hellodevis.fr/lead-assurances/',
-      utm: { utm_source: 'test' }
-    }
-  }, { responsable: true, chef: true, client: true });
-
-  console.log(JSON.stringify(result));
-  return result;
-}
-
 /* --------------------------------------------------------------------------
-   3. Feuille de suivi
-   -------------------------------------------------------------------------- */
-
-/**
- * Ajoute une ligne décrivant le prospect. Idempotent : une même référence
- * (lead_id) n'est jamais inscrite deux fois, même si la page renvoie sa
- * requête. Protégé par un verrou pour éviter deux écritures simultanées.
- */
-function appendLead_(body, sent) {
-  var lead = body && body.lead;
-
-  if (!lead || typeof lead !== 'object') {
-    return { ok: false, reason: 'missing' };
-  }
-
-  var lock = null;
-  var locked = false;
-
-  try {
-    lock = LockService.getScriptLock();
-    locked = lock.tryLock(15000);
-  } catch (error) {
-    locked = false;
-  }
-
-  try {
-    var target = sheet_();
-    var reference = clean_(body.lead_id || lead.lead_id);
-
-    if (reference && rowExists_(target.sheet, reference)) {
-      return { ok: true, duplicate: true, url: target.url };
-    }
-
-    target.sheet.appendRow(buildRow_(lead, body, sent));
-    formatLastRow_(target.sheet, lead);
-
-    return { ok: true, url: target.url };
-  } catch (error) {
-    console.error('Feuille indisponible : ' + (error && error.message));
-    return { ok: false, reason: 'sheet', message: String((error && error.message) || '').slice(0, 200) };
-  } finally {
-    if (locked && lock) {
-      try { lock.releaseLock(); } catch (error) { /* sans conséquence */ }
-    }
-  }
-}
-
-/**
- * Ouvre la feuille enregistrée, ou la crée (puis la partage) à la première
- * demande. L'identifiant est conservé dans les propriétés du script : une
- * seule feuille est utilisée, quel que soit le nombre de demandes.
- */
-function sheet_() {
-  var props = PropertiesService.getScriptProperties();
-  var spreadsheet = storedSheet_();
-
-  if (!spreadsheet) {
-    spreadsheet = SpreadsheetApp.create(SHEET_TITLE);
-    props.setProperty('SHEET_ID', spreadsheet.getId());
-    console.log('Feuille créée : ' + spreadsheet.getUrl());
-    shareSheet_(spreadsheet.getId());
-  }
-
-  var sheet = spreadsheet.getSheetByName(SHEET_TAB);
-  if (!sheet) {
-    sheet = spreadsheet.getSheets()[0];
-    if (!sheet) { sheet = spreadsheet.insertSheet(); }
-    sheet.setName(SHEET_TAB);
-  }
-
-  prepareSheet_(spreadsheet);
-
-  return { ss: spreadsheet, sheet: sheet, url: spreadsheet.getUrl() };
-}
-
-/** URL de la feuille, si elle a déjà été créée (sans la créer). */
-function sheetUrl_() {
-  var spreadsheet = storedSheet_();
-  return spreadsheet ? spreadsheet.getUrl() : '';
-}
-
-function storedSheet_() {
-  try {
-    var id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
-    return id ? SpreadsheetApp.openById(id) : null;
-  } catch (error) {
-    console.warn('Feuille introuvable : ' + (error && error.message));
-    return null;
-  }
-}
-
-/**
- * Prépare l'onglet : en-têtes figés, largeurs, formats texte pour garder les
- * zéros initiaux des téléphones et codes postaux. Idempotent.
- */
-function prepareSheet_(spreadsheet) {
-  var sheet = spreadsheet.getSheetByName(SHEET_TAB);
-  if (!sheet) { return; }
-
-  var first = sheet.getRange(1, 1).getValue();
-  if (clean_(first)) { return; }
-
-  sheet.getRange(1, 1, 1, SHEET_COLUMNS.length).setValues([SHEET_COLUMNS]);
-  sheet.getRange(1, 1, 1, SHEET_COLUMNS.length)
-    .setFontWeight('bold')
-    .setBackground('#003366')
-    .setFontColor('#ffffff')
-    .setVerticalAlignment('middle');
-
-  sheet.setFrozenRows(1);
-
-  if (sheet.getMaxColumns() < SHEET_COLUMNS.length) {
-    sheet.insertColumnsAfter(sheet.getMaxColumns(), SHEET_COLUMNS.length - sheet.getMaxColumns());
-  }
-
-  var widths = [130, 230, 150, 170, 170, 210, 130, 100, 190, 260, 240, 120, 120, 120, 100, 100, 200, 100];
-  for (var i = 0; i < widths.length; i++) {
-    sheet.setColumnWidth(i + 1, widths[i]);
-  }
-
-  // Colonnes « Téléphone » (7) et « Code postal » (8) en texte.
-  sheet.getRange(2, 7, Math.max(sheet.getMaxRows() - 1, 1), 2).setNumberFormat('@');
-}
-
-/** Vrai si la référence est déjà présente dans la colonne B. */
-function rowExists_(sheet, reference) {
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) { return false; }
-
-  var values = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
-  for (var i = 0; i < values.length; i++) {
-    if (clean_(values[i][0]) === reference) { return true; }
-  }
-  return false;
-}
-
-/** Formate la ligne qui vient d'être ajoutée (date, texte, lien e-mail). */
-function formatLastRow_(sheet, lead) {
-  var row = sheet.getLastRow();
-  if (row < 2) { return; }
-
-  try {
-    sheet.getRange(row, 1).setNumberFormat('dd/MM/yyyy HH:mm');
-
-    // Téléphone et code postal : forcer le texte (zéros initiaux).
-    sheet.getRange(row, 7, 1, 2).setNumberFormat('@').setHorizontalAlignment('left');
-
-    // E-mail cliquable : le texte reste l'adresse (lisible, exportable), le
-    // lien est un attribut de la cellule — aucune formule, donc rien qui
-    // dépende de la locale de la feuille.
-    var mail = clean_(lead && lead.email);
-    if (isEmail_(mail)) {
-      var cell = sheet.getRange(row, 6);
-      try {
-        cell.setRichTextValue(
-          SpreadsheetApp.newRichTextValue()
-            .setText(mail)
-            .setLinkUrl('mailto:' + mail)
-            .build()
-        );
-      } catch (error) {
-        cell.setValue(mail);
-      }
-    }
-
-  } catch (error) {
-    console.warn('Mise en forme de la ligne ignorée : ' + (error && error.message));
-  }
-}
-
-/** Ligne de valeurs, dans l'ordre de SHEET_COLUMNS. */
-function buildRow_(lead, body, sent) {
-  var utm = lead.utm && typeof lead.utm === 'object' ? lead.utm : {};
-
-  return [
-    new Date(),
-    clean_(body.lead_id || lead.lead_id),
-    clean_(lead.formulaire || body.form),
-    clean_(lead.nom),
-    clean_(lead.societe),
-    clean_(lead.email),
-    clean_(lead.telephone),
-    clean_(lead.code_postal),
-    clean_(lead.volume),
-    besoins_(lead.besoins),
-    clean_(lead.page),
-    clean_(utm.utm_source),
-    clean_(utm.utm_medium),
-    clean_(utm.utm_campaign),
-    clean_(utm.gclid),
-    clean_(utm.fbclid),
-    SHEET_EMAIL,
-    emails_(sent)
-  ];
-}
-
-function besoins_(value) {
-  if (Array.isArray(value)) {
-    return value.map(function (item) { return clean_(item); }).filter(Boolean).join(' · ');
-  }
-  return clean_(value);
-}
-
-function emails_(sent) {
-  var map = sent && typeof sent === 'object' ? sent : {};
-  var parts = [];
-  if (map.responsable) { parts.push('responsable'); }
-  if (map.chef) { parts.push('chef'); }
-  if (map.client) { parts.push('client'); }
-  return parts.length ? parts.length + '/3 (' + parts.join(', ') + ')' : 'aucun';
-}
-
-/** Partage la feuille avec SHEET_EMAIL (accès en modification). */
-function shareSheet_(id) {
-  if (!SHEET_EMAIL) { return; }
-  try {
-    DriveApp.getFileById(id).addEditor(SHEET_EMAIL);
-    console.log('Feuille partagée avec ' + SHEET_EMAIL);
-  } catch (error) {
-    console.warn('Partage impossible (' + SHEET_EMAIL + ') : ' + (error && error.message));
-  }
-}
-
-/**
- * Purge RGPD : supprime les lignes plus anciennes que `jours` (180 par
- * défaut). À exécuter à la main (Exécuter → purgerLeadsAnciens) ou depuis un
- * déclencheur mensuel.
- */
-function purgerLeadsAnciens(jours) {
-  var limite = Number(jours) || 180;
-  var target = sheet_();
-  var sheet = target.sheet;
-  var lastRow = sheet.getLastRow();
-
-  if (lastRow < 2) { return 0; }
-
-  var dates = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
-  var seuil = new Date().getTime() - limite * 24 * 3600 * 1000;
-  var supprimees = 0;
-
-  for (var i = dates.length - 1; i >= 0; i--) {
-    var value = dates[i][0];
-    var time = value instanceof Date ? value.getTime() : new Date(value).getTime();
-    if (!isNaN(time) && time < seuil) {
-      sheet.deleteRow(i + 2);
-      supprimees++;
-    }
-  }
-
-  console.log(supprimees + ' ligne(s) de plus de ' + limite + ' jours supprimée(s)');
-  return supprimees;
-}
-
-/* --------------------------------------------------------------------------
-   4. Utilitaires
+   3. Utilitaires
    -------------------------------------------------------------------------- */
 
 /**

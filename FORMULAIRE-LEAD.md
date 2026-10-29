@@ -27,6 +27,9 @@ Visiteur ──► formulaire (2 étapes, validation, accessibilité)
                  └──► 3. Client        le prospect              (Répondre à = pbenateau@hellolead.pro)
 
       si le relais refuse (jeton, quota) ──► repli `formsubmit`, la demande n'est pas perdue
+
+      en parallèle, un second relais (production-sheet/) ajoute une ligne
+      dans la feuille de calcul du bureau — indépendant des e-mails
                  │
                  ▼
 /boite-de-reception.html  →  copie locale des demandes et des e-mails générés
@@ -76,6 +79,25 @@ formulaire ; la boîte de réception locale en affiche le rendu exact.
 > garantit qu'il reçoit l'e-mail même si le responsable filtre ou redirige le
 > sien. `ccChef: true` ajoute en plus une copie sur le message du responsable —
 > inutile dans le cas nominal, donc `false`.
+
+### La feuille de suivi (relais séparé)
+
+En plus des e-mails, chaque demande valide ajoute **une ligne** dans une feuille
+de calcul Google choisie par le bureau. C'est un **second relais Apps Script**
+(`production-sheet/`), attaché à cette feuille : `production-gas/Code.gs` n'est
+**pas** modifié, et les deux envois sont indépendants (l'échec de l'un
+n'empêche jamais l'autre).
+
+| | |
+|---|---|
+| Configuration dans les pages | `sheet: { url: '…/exec', token: '…' }` (vide = pas de ligne) |
+| Colonnes | le script lit la ligne 1 et remplit les colonnes reconnues ; les absentes sont ajoutées à la fin |
+| Doublons | impossibles sur une même référence (`lead_id`) |
+| Panne de la feuille | invisible pour le visiteur, les e-mails partent, l'incident est tracé (`hl_lead_form_sheet`) |
+| Plafond | 300 lignes/jour |
+
+Installation, tableau des intitulés reconnus, sécurité, RGPD et dépannage :
+**`production-sheet/README.md`**.
 
 ---
 
@@ -161,6 +183,9 @@ window.HL_LEAD_CONFIG = {
   endpoint: '',
 
   gas: { url: '', token: '' },
+
+  // Feuille de suivi — relais séparé (production-sheet/)
+  sheet: { url: '', token: '' },
 
   emailjs: { publicKey: '', serviceId: '', templateId: '' },   // alternative
   fallbackProvider: 'formsubmit',
@@ -312,6 +337,7 @@ mais **cette page ne doit pas être publiée** sur le site en production.
 | `lead-*/index.html` | formulaire + moteur JS, `provider: 'gas'` (config en tête de script) | oui |
 | `boite-de-reception.html` | boîte de réception locale des demandes | **non** |
 | `production-gas/` | relais Gmail Apps Script + procédure d'installation | non |
+| `production-sheet/` | relais feuille de suivi (script attaché au classeur) | non |
 | `production-php/` | relais e-mail facultatif pour un serveur PHP (§ 9) | seulement si utilisé |
 | `FORMULAIRE-LEAD.md` | ce document | non |
 
@@ -349,6 +375,10 @@ remplace.
 - [ ] `FROM_ADDRESS` laissé vide, ou renseigné avec un alias Gmail vérifié
       (§ 3 bis) — redéployer une nouvelle version dans ce second cas.
 - [ ] Repli FormSubmit activé une fois (lien d'activation reçu par e-mail).
+- [ ] Script de la feuille installé (**Extensions → Apps Script**), `TOKEN` remplacé,
+      application web déployée, `sheet.url` + `sheet.token` renseignés dans les 4 pages.
+- [ ] Une demande test crée bien une ligne dans la feuille (bonnes colonnes).
+- [ ] Durée de conservation des prospects décidée (purge des lignes anciennes).
 - [ ] `boite-de-reception.html` **non publiée**.
 - [ ] Politique de confidentialité à jour (Gmail/Google, finalité, durée).
 - [ ] `robots.txt` / `noindex` conservés sur la boîte locale.

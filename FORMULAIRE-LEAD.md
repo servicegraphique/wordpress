@@ -1,26 +1,31 @@
-# Formulaire de lead — trois e-mails depuis une adresse dédiée
+# Formulaire de lead — trois e-mails depuis la boîte dédiée
 
 Le formulaire des pages `/lead-assurances/`, `/lead-assurances-rcs/`,
 `/lead-energies/` et `/lead-energies-rcs/` fonctionne **sans serveur, sans PHP
-et sans back-end**. Toute la logique est dans le JavaScript de la page.
+et sans back-end**.
 
 Les **trois messages** exigés — notification au responsable, copie au chef de
-département, confirmation au client — partent de la **même boîte dédiée** :
-`ifeminformatique@gmail.com`, reliée au service **EmailJS**.
+département, confirmation au client — partent **directement de
+`ifeminformatique@gmail.com`**, via un relais **Google Apps Script** installé
+dans cette boîte : c'est Gmail qui expédie, sans service tiers.
 
 ```
 Visiteur ──► formulaire (2 étapes, validation, accessibilité)
                  │
                  ▼
-      window.HL_LEAD_CONFIG.provider  =  'emailjs'
+      window.HL_LEAD_CONFIG.provider  =  'gas'
+                 │
+                 │  un seul POST text/plain
+                 ▼
+      Application web Apps Script (dans ifeminformatique@gmail.com)
                  │
                  ├──► 1. Responsable   manajahelvin@gmail.com   (Répondre à = le prospect)
                  ├──► 2. Chef          ifeminformatique@gmail.com  (objet « [Copie] … »)
-                 │     └──► 3. Client  le prospect              (Répondre à = ifeminformatique@gmail.com)
+                 └──► 3. Client        le prospect              (Répondre à = ifeminformatique@gmail.com)
+
+      si le relais refuse (jeton, quota) ──► repli `formsubmit`, la demande n'est pas perdue
                  │
-                 └─ si EmailJS refuse (quota, clés) ──► repli `formsubmit`, la demande n'est pas perdue
-                        │
-                        ▼
+                 ▼
 /boite-de-reception.html  →  copie locale des demandes et des e-mails générés
 ```
 
@@ -39,8 +44,8 @@ python3 -m http.server 8000
 | <http://localhost:8000/lead-energies/> | formulaire énergies |
 | <http://localhost:8000/boite-de-reception.html> | demandes reçues + e-mails générés |
 
-À la livraison, `provider: 'emailjs'` est déjà en place mais les **clés sont
-vides** : tant qu'elles ne sont pas renseignées (§ 3), chaque demande part
+À la livraison, `provider: 'gas'` est déjà en place mais **l'URL et le jeton
+sont vides** : tant qu'ils ne sont pas renseignés (§ 3), chaque demande part
 automatiquement par le repli **FormSubmit** vers le responsable, avec le chef en
 copie. **Aucune demande n'est perdue** pendant la mise en service.
 
@@ -63,108 +68,59 @@ sa confirmation écrit donc au chef de département, pas à une adresse techniqu
 Les gabarits HTML + texte sont produits par `buildEmails()` dans le script du
 formulaire ; la boîte de réception locale en affiche le rendu exact.
 
-> Le chef reçoit **un second message distinct** (et non une simple copie) : c'est
-> ce qui garantit qu'il reçoit l'e-mail même si le responsable filtre ou
-> redirige le sien. Mettre `emailjs.ccChef: true` ajoute en plus une copie sur
-> le message du responsable — inutile dans le cas nominal, donc `false`.
+> Le chef reçoit **un message distinct** (et non une simple copie) : c'est ce qui
+> garantit qu'il reçoit l'e-mail même si le responsable filtre ou redirige le
+> sien. `ccChef: true` ajoute en plus une copie sur le message du responsable —
+> inutile dans le cas nominal, donc `false`.
 
 ---
 
-## 3. Mise en service d'EmailJS (une seule fois, ~10 minutes)
+## 3. Mise en service du relais Gmail (une seule fois, ~5 minutes)
 
-EmailJS envoie de vrais e-mails depuis une boîte existante, appelé en
-JavaScript : aucun serveur, aucune clé SMTP dans la page.
+Le script `production-gas/Code.gs` vit dans la boîte : c'est elle qui expédie.
+Procédure détaillée et dépannage : **`production-gas/README.md`**. Résumé :
 
-### 3.1 Créer le compte et relier la boîte dédiée
+1. <https://script.google.com> **connecté à `ifeminformatique@gmail.com`** →
+   **Nouveau projet** → coller tout `Code.gs`.
+2. Générer un jeton long et aléatoire et le mettre dans la constante `TOKEN`
+   (le même servira dans les pages).
+3. **Déployer → Nouveau déploiement → Application web** :
+   - *Exécuter en tant que* : **moi** (`ifeminformatique@gmail.com`)
+   - *Qui a accès* : **Tout le monde**
+4. Copier l'URL terminée par `/exec`, puis vérifier dans un navigateur :
 
-1. Créer un compte gratuit sur <https://dashboard.emailjs.com> (utiliser la
-   boîte `ifeminformatique@gmail.com`, c'est elle qui expédiera).
-2. **Email Services → Add New Service → Gmail**.
-3. Autoriser la connexion au compte `ifeminformatique@gmail.com` (OAuth
-   Google). Relever l'**identifiant du service**, de la forme `service_xxxxxxx`.
+   ```json
+   {"ok":true,"service":"HelloLead","ready":true,"remaining":97}
+   ```
 
-> Le service doit être ce compte Gmail précis : c'est lui qui devient
-> l'expéditeur des trois messages. Un autre service (Gmail personnel, SMTP
-> générique) expédierait depuis une autre adresse.
+5. Dans **les 4 pages**, renseigner :
 
-Les messages sortent par l'infrastructure Google : SPF et DKIM sont donc déjà
-corrects, sans configuration DNS supplémentaire.
+   ```js
+   provider: 'gas',
+   gas: {
+     url: 'https://script.google.com/macros/s/AKfy…/exec',
+     token: 'le-même-jeton-que-dans-TOKEN'
+   },
+   ```
 
-### 3.2 Créer un gabarit unique
+6. Envoyer une demande test : trois e-mails arrivent, tous expédiés par
+   `ifeminformatique@gmail.com`.
 
-**Email Templates → New Template**, puis dans l'onglet *Settings* :
+### Quotas et garde-fous
 
-| Champ EmailJS | Valeur |
-|---|---|
-| To Email | `{{to_email}}` |
-| CC | `{{cc}}` |
-| BCC | `{{bcc}}` — facultatif, peut rester vide |
-| Subject | `{{subject}}` |
-| Reply To | `{{reply_to}}` |
-| From Name | `{{from_name}}` |
+| Limite | Valeur | Conséquence |
+|---|---|---|
+| Gmail (compte personnel) via Apps Script | **100 e-mails / jour** | 3 par demande → ~33 demandes/jour |
+| `MAX_LEADS_PER_DAY` du script | **30 demandes / jour** | au-delà : refus `quota` → repli FormSubmit |
+| `MAX_MESSAGE_CHARS` | 120 000 caractères | message refusé (`invalid`) |
 
-Dans l'onglet *Content*, coller **exactement** ceci (triple accolade : le corps
-est du HTML déjà mis en forme par le formulaire) :
+### Sécurité
 
-```html
-{{{message}}}
-```
-
-L'onglet *Plain text* n'est pas nécessaire : `message_text` est transmis en
-parallèle pour les clients qui refusent le HTML (variable `{{message_text}}`
-disponible si vous préférez l'utiliser).
-
-Relever l'**identifiant du gabarit**, de la forme `template_xxxxxxx`.
-
-> Un seul gabarit suffit pour les trois messages : le destinataire, l'objet et
-> le corps sont des variables. C'est aussi ce qui tient dans l'offre gratuite
-> (2 gabarits maximum).
-
-### 3.3 Renseigner les trois clés dans les 4 pages
-
-Dans le `<script>` en tête de chaque page, l'objet `emailjs` :
-
-```js
-emailjs: {
-  publicKey: 'AbCdEfGhIjKlMnOp',   // Account → General → Public Key
-  serviceId: 'service_xxxxxxx',    // Email Services
-  templateId: 'template_xxxxxxx',  // Email Templates
-  ccChef: false
-},
-```
-
-La **clé publique** n'est pas un secret : elle est visible dans le code de la
-page, c'est son principe. Ce qui protège la boîte, c'est le quota et la
-possibilité de restreindre les origines autorisées côté tableau de bord.
-
-Renseigner **les 4 pages** (`lead-assurances`, `lead-assurances-rcs`,
-`lead-energies`, `lead-energies-rcs`) — même service, même gabarit.
-
-### 3.4 Quota et surveillance
-
-| Offre | Envois | Gabarits | Remarque |
-|---|---|---|---|
-| Gratuite | **200 / mois** | 2 | ~**66 demandes** (3 messages chacune) |
-| Payante (~9 $/mois) | au-delà | illimités | whitelist d'origines, white-label |
-
-- Dépassement = requêtes **rejetées** (jamais de surcoût silencieux).
-- EmailJS prévient par e-mail à 80 %, 95 % et 100 % du quota.
-- **Quota épuisé ou clés invalides** : le formulaire bascule automatiquement
-  sur le repli `formsubmit` — la demande arrive quand même au responsable, sans
-  la confirmation au client. Le journal local indique alors le fournisseur
-  réellement utilisé (`formsubmit`).
-- Le suivi mensuel se lit dans *Account → Usage*.
-
-### 3.5 Vérifier en une demande
-
-1. Envoyer une demande test depuis `/lead-assurances/`.
-2. Trois e-mails doivent arriver : responsable, chef (`[Copie] …`), et le
-   prospect utilisé dans le test.
-3. Dans Gmail, l'expéditeur affiché est `ifeminformatique@gmail.com` ; un
-   « Répondre » sur la confirmation écrit à cette même adresse.
-4. `/boite-de-reception.html` affiche la demande avec la mention
-   « Envoi automatique actif » et **plus de bouton** « Envoyer la confirmation
-   au client » (le message est déjà parti).
+L'URL et le jeton sont visibles dans le code de la page, comme toute
+configuration côté navigateur : ils empêchent un usage accidentel, pas un usage
+malveillant déterminé — d'où le plafond de 30 demandes/jour. En cas d'abus :
+changer `TOKEN` dans le script, redéployer une **nouvelle version**, reporter le
+nouveau jeton dans les 4 pages.
 
 ---
 
@@ -174,16 +130,21 @@ Tout se règle dans **un seul objet**, en haut du `<script>` de chaque page :
 
 ```js
 window.HL_LEAD_CONFIG = {
-  provider: 'emailjs',
+  provider: 'gas',
   senderName: 'HelloLead',
+  ccChef: false,                                // copie du chef sur le message au responsable
   contactEmail: 'ifeminformatique@gmail.com',   // affiché au prospect / Reply-To
   siteUrl: 'https://www.hellodevis.fr',
   inboxUrl: '/boite-de-reception.html',
   endpoint: '',
-  emailjs: { publicKey: '', serviceId: '', templateId: '', ccChef: false },
+
+  gas: { url: '', token: '' },
+
+  emailjs: { publicKey: '', serviceId: '', templateId: '' },   // alternative
   fallbackProvider: 'formsubmit',
   formsubmit: { alias: '', email: 'manajahelvin@gmail.com' },
   web3forms: { accessKey: '' },
+
   form: {
     key: 'lead-assurances',
     label: 'Assurances pro',
@@ -193,10 +154,26 @@ window.HL_LEAD_CONFIG = {
 };
 ```
 
-### `emailjs` — mode livré (trois e-mails, expéditeur unique)
+### `gas` — mode livré (trois e-mails, expéditeur = la boîte elle-même)
 
-Voir § 3. `fallbackProvider` désigne le mode utilisé si les clés sont vides ou
-refusées, ou si le quota mensuel est atteint : la demande n'est jamais perdue.
+Voir § 3. Un seul POST porte les trois messages ; le script répond
+`{ok, sent:{responsable, chef, client}}`, ce qui permet de savoir précisément
+ce qui est parti.
+
+### `emailjs` — alternative sans serveur (service tiers)
+
+Si un service tiers est préféré : compte gratuit sur <https://dashboard.emailjs.com>,
+**service Gmail relié à `ifeminformatique@gmail.com`**, un gabarit unique
+(`{{to_email}}`, `{{cc}}`, `{{subject}}`, `{{reply_to}}`, corps `{{{message}}}`),
+puis :
+
+```js
+provider: 'emailjs',
+emailjs: { publicKey: '…', serviceId: 'service_…', templateId: 'template_…' }
+```
+
+Gratuit : 200 envois/mois (≈ 66 demandes), puis requêtes rejetées. Le
+comportement est identique côté page (trois messages, même suivi).
 
 ### `formsubmit` — repli (vrai e-mail, sans serveur)
 
@@ -206,10 +183,6 @@ confirmer** dans la boîte du responsable, sinon rien n'arrive.
 
 Limite structurelle : l'API AJAX de FormSubmit n'envoie **pas** de confirmation
 au prospect. C'est pourquoi ce mode est un repli, pas le mode principal.
-
-Astuce : après activation, FormSubmit fournit un **alias** (chaîne aléatoire).
-Le renseigner dans `formsubmit.alias` évite d'afficher l'adresse en clair dans
-le code source.
 
 ### `local` — pour les démonstrations
 
@@ -233,14 +206,12 @@ provider: 'endpoint',
 endpoint: 'https://mon-api.exemple.fr/lead'
 ```
 
-POST JSON (même contrat que le relais PHP livré en option, § 8). Utile pour un
+POST JSON (même contrat que le relais PHP livré en option, § 9). Utile pour un
 CRM, une fonction serverless (Cloudflare Workers, Netlify, Vercel) ou un webhook
-interne. C'est ce mode qu'un relais maîtrisé utiliserait pour expédier depuis
-`ifeminformatique@gmail.com` via SMTP Google.
+interne.
 
-> **Seul `local` ne dépend d'aucun service tiers.** Les trois autres ajoutent une
-> dépendance externe : à choisir en connaissance de cause, et à documenter dans
-> la politique de confidentialité.
+> **Seul `local` ne dépend d'aucun service.** `gas` reste chez Google (la boîte
+> elle-même), `emailjs`/`formsubmit`/`web3forms` ajoutent un sous-traitant.
 
 ---
 
@@ -255,27 +226,27 @@ interne. C'est ce mode qu'un relais maîtrisé utiliserait pour expédier depuis
 | Honeypot invisible | `aria-hidden`, `tabindex="-1"`, hors écran |
 | Nettoyage | `.trim()`, minuscules sur l'e-mail, chiffres forcés sur le code postal et le téléphone |
 
-Un formulaire sans serveur ne peut pas limiter le débit par IP : EmailJS applique
-son propre quota, le piège reste la première barrière.
+Un formulaire sans serveur ne peut pas limiter le débit par IP : le relais
+plafonne à 30 demandes/jour, le piège reste la première barrière.
 
 ### Point RGPD
 
-Avec `emailjs`, les données du prospect transitent par EmailJS puis par Google
-(Gmail) avant d'arriver dans la boîte du responsable : deux sous-traitants à
-mentionner dans la politique de confidentialité, avec la finalité (réponse à une
-demande commerciale) et la durée de conservation. La copie locale (§ 7) reste
-dans le navigateur du poste et n'est jamais transmise.
-
-Pour supprimer tout tiers : `provider: 'endpoint'` avec un relais maîtrisé
-(PHP ou serverless), qui expédie lui-même les messages.
+Avec `gas`, les données passent par Gmail/Google — déjà sous-traitant de la
+messagerie — et par aucun intermédiaire supplémentaire. Avec `emailjs`, un
+second sous-traitant s'ajoute. Dans les deux cas : finalité (réponse à une
+demande commerciale) et durée de conservation à documenter dans la politique de
+confidentialité. La copie locale (§ 7) reste dans le navigateur du poste et
+n'est jamais transmise.
 
 ### Limite assumée
 
 - Le formulaire ne peut pas savoir si un message a été **lu**, seulement s'il a
-  été **accepté** par le fournisseur (HTTP 200).
-- Un envoi incertain (panne réseau, erreur 5xx) n'est **jamais rejoué** sur le
-  repli : mieux vaut une demande à ressaisir qu'un doublon commercial.
-- Un refus explicite (quota, clés) déclenche, lui, le repli sans risque.
+  été **accepté** pour expédition.
+- Un envoi incertain (panne réseau, erreur 5xx, réponse ambiguë) n'est **jamais
+  rejoué** sur le repli : mieux vaut une demande à ressaisir qu'un doublon
+  commercial.
+- Un refus explicite (URL/ jeton absents, jeton refusé, quota atteint)
+  déclenche, lui, le repli sans risque, car rien n'est parti.
 
 ---
 
@@ -301,10 +272,10 @@ Pour supprimer tout tiers : `provider: 'endpoint'` avec un relais maîtrisé
 |---|---|
 | Liste | demande la plus récente en tête, compteurs (total, mois, dernière réception) |
 | Détail | coordonnées, volume, besoins, formulaires, page d'origine, référence |
-| E-mails | les 2 gabarits rendus dans des `iframe` (hauteur ajustée au contenu) |
+| E-mails | les gabarits rendus dans des `iframe` (hauteur ajustée au contenu) |
 | Actions | supprimer une demande, tout effacer, exporter en JSON, exporter en CSV |
 | Confirmation | bouton « Envoyer la confirmation au client » **seulement** si le message n'est pas déjà parti |
-| Mention | adaptative : mode EmailJS, relais, serveur ou journal local |
+| Mention | adaptative : relais Gmail, EmailJS, relais FormSubmit, serveur ou journal local |
 | Synchronisation | la page se met à jour si une demande arrive depuis un autre onglet |
 
 Les données ne quittent jamais le navigateur. `noindex, nofollow` est appliqué,
@@ -316,17 +287,15 @@ mais **cette page ne doit pas être publiée** sur le site en production.
 
 | Fichier | Rôle | Publier ? |
 |---|---|---|
-| `lead-*/index.html` | formulaire + moteur JS, `provider: 'emailjs'` (config en tête de script) | oui |
+| `lead-*/index.html` | formulaire + moteur JS, `provider: 'gas'` (config en tête de script) | oui |
 | `boite-de-reception.html` | boîte de réception locale des demandes | **non** |
+| `production-gas/` | relais Gmail Apps Script + procédure d'installation | non |
 | `production-php/` | relais e-mail facultatif pour un serveur PHP (§ 9) | seulement si utilisé |
 | `FORMULAIRE-LEAD.md` | ce document | non |
 
-Le dossier `production-php/` est **optionnel** : rien dans les pages n'en dépend
-aujourd'hui.
-
 ---
 
-## 9. Option : relais PHP (si un jour un envoi serveur est requis)
+## 9. Option : relais PHP (si un serveur est disponible)
 
 `production-php/lead-form-mail.php` + `lead-form-config.php` envoient réellement
 les deux e-mails internes (fonction `mail()`, SMTP, `wp_mail()` ou `log`), avec
@@ -335,31 +304,28 @@ L'expéditeur y est déjà `ifeminformatique@gmail.com` ; pour passer par Gmail 
 SMTP, utiliser `smtp.gmail.com:587` et un **mot de passe d'application** Google
 (compte → Sécurité → Validation en deux étapes).
 
-Activation :
+Activation : copier les deux fichiers à la racine du site (PHP 7.4+), vérifier
+les adresses, `enabled => true`, puis dans la page `provider: 'endpoint'` et
+`endpoint: '/lead-form-mail.php'`.
 
-1. copier les deux fichiers à la racine du site (PHP 7.4+) ;
-2. vérifier les adresses dans `lead-form-config.php`, puis `enabled => true` ;
-3. dans la page, passer `provider: 'endpoint'` et
-   `endpoint: '/lead-form-mail.php'`.
-
-Sans serveur PHP, **ne pas l'utiliser** : c'est précisément ce qu'EmailJS
+Sans serveur PHP, **ne pas l'utiliser** : c'est ce que le relais Apps Script
 remplace.
 
 ---
 
 ## 10. Mise en production — liste de contrôle
 
-- [x] `provider: 'emailjs'`, `fallbackProvider: 'formsubmit'` dans les 4 pages.
+- [x] `provider: 'gas'`, `fallbackProvider: 'formsubmit'` dans les 4 pages.
 - [x] `responsable` = manajahelvin@gmail.com, `chef` = ifeminformatique@gmail.com,
       `contactEmail` = ifeminformatique@gmail.com.
-- [ ] Compte EmailJS créé et **service Gmail relié à ifeminformatique@gmail.com**.
-- [ ] Gabarit unique créé (`{{to_email}}`, `{{cc}}`, `{{subject}}`, `{{reply_to}}`,
-      `{{{message}}}`).
-- [ ] `publicKey`, `serviceId`, `templateId` renseignés **dans les 4 pages**.
+- [ ] Projet Apps Script créé **depuis `ifeminformatique@gmail.com`**.
+- [ ] `TOKEN` remplacé par un jeton long et aléatoire.
+- [ ] Application web déployée (*moi* / *Tout le monde*), URL `/exec` testée
+      dans un navigateur (`{"ok":true,…, "ready":true}`).
+- [ ] `gas.url` et `gas.token` renseignés **dans les 4 pages**.
 - [ ] Une demande test produit bien **3 e-mails**, tous expédiés par
-      ifeminformatique@gmail.com, et « Répondre » écrit au prospect.
+      `ifeminformatique@gmail.com`, et « Répondre » écrit au prospect.
 - [ ] Repli FormSubmit activé une fois (lien d'activation reçu par e-mail).
-- [ ] Alerte de quota surveillée (80 % / 95 % / 100 % des 200 envois mensuels).
 - [ ] `boite-de-reception.html` **non publiée**.
-- [ ] Politique de confidentialité à jour (EmailJS + Google, finalité, durée).
+- [ ] Politique de confidentialité à jour (Gmail/Google, finalité, durée).
 - [ ] `robots.txt` / `noindex` conservés sur la boîte locale.

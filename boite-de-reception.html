@@ -573,7 +573,8 @@
       if (emails.internal) {
         // En mode EmailJS, le chef reçoit un message distinct intitulé
         // « [Copie] » ; en mode relais, il est simplement en copie.
-        var internalLabel = lead.provider === 'emailjs'
+        var copies = lead.provider === 'emailjs' || lead.provider === 'gas';
+        var internalLabel = copies
           ? 'Responsable — le chef de département reçoit la même, intitulée « [Copie] »'
           : 'Responsable (chef de département en copie)';
         panel.appendChild(mailBlock(internalLabel, emails.internal));
@@ -646,8 +647,8 @@
       strong.textContent = 'Mode local. ';
       text = 'Les demandes sont enregistrées dans ce navigateur et aucun e-mail n’est envoyé : '
         + 'les deux messages ci-dessous sont ceux qui partiraient en production, générés à l’identique. '
-        + 'Passez provider à « emailjs » (ou « formsubmit ») dans la page pour un envoi réel.';
-    } else if (provider === 'emailjs') {
+        + 'Passez provider à « gas » (ou « emailjs ») dans la page pour un envoi réel.';
+    } else if (provider === 'gas' || provider === 'emailjs') {
       strong.textContent = 'Envoi automatique actif. ';
       text = 'Les trois messages partent réellement depuis ifeminformatique@gmail.com : '
         + 'la notification au responsable, l’e-mail dédié au chef de département et la confirmation au client. '

@@ -179,3 +179,6 @@ durée de conservation doit être décidée et appliquée.
 | Les colonnes se dupliquent | en-têtes existants avec un intitulé non reconnu | renommer l'en-tête selon le tableau § 4, ou compléter la liste `FIELDS` |
 | Ligne écrite mais valeurs au mauvais endroit | `ADD_MISSING_COLUMNS` a ajouté des colonnes après coup | supprimer les colonnes ajoutées et renommer proprement la ligne 1 |
 | Aucune ligne alors que tout semble prêt | URL `/exec` avec un `?` ou un espace de trop | recopier l'URL exacte, jusqu'à `/exec` |
+
+'953aebf3a77149a0b28a9b86b382460d28578416901846dfa52a123bb8a2df6b'
+https://script.google.com/macros/s/AKfycbxwb0epxVYrxAcMr2CHd70yoy6aQ-q-dq12BS302HtZ2JOW3GrY0fRmix3AowHSiwu-/exec
